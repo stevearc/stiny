@@ -1,0 +1,17 @@
+*.py[cod]
+stiny_env
+*.swp
+dist
+lib
+*.egg-info
+*.egg
+.tox
+.coverage
+htmlcov
+build
+_build
+__pycache__
+.ropeproject
+prod.ini
+gen
+files.json
