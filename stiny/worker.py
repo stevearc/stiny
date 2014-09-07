@@ -57,7 +57,7 @@ class Worker(Thread):
         changed, state = self._get_input('doorbell_button')
         if changed:
             if self.party_mode and state:
-                self.do('on_off', delay=2, duration=3, relay='outside_latch')
+                self.do('on_off', delay=4, duration=3, relay='outside_latch')
             self.do('on' if state else 'off', relay='doorbell')
 
         changed, state = self._get_input('buzzer')
