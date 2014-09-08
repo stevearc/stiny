@@ -1,4 +1,6 @@
 import calendar
+from flywheel import Engine
+from .models import UserPerm
 import json
 import os
 import posixpath
@@ -104,9 +106,19 @@ def _constants(request):
 
 
 def _auth_callback(userid, request):
-    perms = [Authenticated]
-    principles = aslist(request.registry.settings.get('auth.' + userid, []))
-    perms.extend(principles)
+    perms = []
+    setting = request.registry.settings.get('auth.' + userid)
+    if setting is not None:
+        principals = aslist(setting)
+    else:
+        now = datetime.datetime.utcnow()
+        permlist = request.db(UserPerm) \
+            .filter(UserPerm.start < now, email=userid).all()
+        principals = set()
+        for perm in permlist:
+            if now < perm.end:
+                principals.update(perm.perms)
+    perms.extend(principals)
     return perms
 
 
@@ -138,12 +150,14 @@ def includeme(config):
     config.add_request_method(_constants, name='client_constants')
     config.add_request_method(lambda r, *a, **k: r.route_url('root', *a, **k),
                               name='rooturl')
+    config.add_request_method(lambda r, u: _auth_callback(u, r), name='user_principals')
 
     prefix = settings.get('pike.url_prefix', 'gen').strip('/')
     config.registry.client_constants = {
         'URL_PREFIX': '/' + prefix,
         'USER': lambda r: r.authenticated_userid,
         'GOOGLE_CLIENT_ID': settings.get('google.client_id'),
+        'PERMISSIONS': lambda r: r.effective_principals,
     }
 
     config.registry.assets = None
@@ -169,6 +183,22 @@ def includeme(config):
     ))
     config.set_default_permission('default')
 
+    # Database
+    engine = Engine()
+    access_key = settings.get('aws.access_key')
+    if access_key is None:
+        access_key = os.environ['STINY_AWS_ACCESS_KEY']
+    secret_key = settings.get('aws.secret_key')
+    if secret_key is None:
+        secret_key = os.environ['STINY_AWS_SECRET_KEY']
+    engine.connect_to_region('us-west-1', access_key=access_key,
+                             secret_key=secret_key)
+    engine.register(UserPerm)
+    engine.create_schema()
+    config.registry.engine = engine
+    config.add_request_method(lambda r: r.registry.engine, 'db', reify=True)
+
+    # Start the worker that interfaces with the relays
     from .worker import Worker
     worker = Worker(isolate=asbool(settings.get('pi.debug', False)))
     worker.daemon = True

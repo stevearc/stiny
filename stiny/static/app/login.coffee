@@ -18,6 +18,7 @@ angular.module('stiny')
 
     $http.post('/api/login', {access_token: authResult.access_token}).success((data, status, headers, config) ->
       stAuth.setUser data.user
+      stAuth.setPermissions data.permissions
       if $location.url() == '/login'
         $location.url('/')
     ).error((data, status, headers, config) ->

@@ -1,5 +1,3 @@
-SQLAlchemy (for giving other people permissions, or for setting party mode)
-    * Grant users ability to unlock door (within date range)
-    * Set party mode (within date range)
+Set party mode with a datetime range
 documentation
 # fix the tunnel timeouts

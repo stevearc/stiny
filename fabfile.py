@@ -31,6 +31,8 @@ def bundle():
     _set_var('prod.ini', 'session.validate_key', _get_var('STINY_VALIDATE_KEY'))
     _set_var('prod.ini', 'authtkt.secret', _get_var('STINY_AUTH_SECRET'))
     _set_var('prod.ini', 'google.client_id', _get_var('STINY_GOOGLE_CLIENT_ID'))
+    _set_var('prod.ini', 'aws.access_key', _get_var('STINY_AWS_ACCESS_KEY'))
+    _set_var('prod.ini', 'aws.secret_key', _get_var('STINY_AWS_SECRET_KEY'))
 
     version = _version()
     fab.local("sed -i -e 's/version=.*/version=\"%s\",/' setup.py" % version)

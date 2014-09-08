@@ -46,8 +46,14 @@ angular.module('stiny')
 .factory('stAuth', ['$http', '$route', '$location', '$injector',
 ($http, $route, $location, $injector) -> {
     _user: null
+    _permissions: []
     getUser: -> @_user
-    setUser: (user) -> @_user = user
+    setUser: (@_user) ->
+    setPermissions: (@_permissions) ->
+    hasPermission: (perm) ->
+      if 'admin' in @_permissions
+        return true
+      return perm in @_permissions
     removeUser: -> @_user = null
     # FIXME: Logout doesn't work right now
     logout: ->
@@ -62,7 +68,24 @@ angular.module('stiny')
   }
 ])
 
+.directive('stPermShow', ['stAuth', (stAuth) ->
+  restrict: 'A'
+  replace: true
+  link: (scope, element, attrs) ->
+    perm = attrs.stPermShow
+    scope.$watch(->
+      stAuth.hasPermission(perm)
+    (hasPerm) ->
+      if hasPerm
+        element.removeClass('hide')
+      else
+        element.addClass('hide')
+    )
+])
+
 .run(['stAuth', 'CONST', (stAuth, CONST) ->
   if CONST.USER?
     stAuth.setUser(CONST.USER)
+  if CONST.PERMISSIONS?
+    stAuth.setPermissions(CONST.PERMISSIONS)
 ])

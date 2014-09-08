@@ -9,6 +9,7 @@ README = open(os.path.join(HERE, 'README.rst')).read()
 CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
 
 REQUIREMENTS = [
+    'flywheel',
     'pycrypto',
     'pyramid>=1.5',
     'pyramid_beaker',

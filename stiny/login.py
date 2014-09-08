@@ -38,4 +38,5 @@ def login(request, access_token):
     request.response.headers.extend(remember(request, email))
     return {
         'user': email,
+        'permissions': request.user_principals(email),
     }

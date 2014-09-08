@@ -24,7 +24,7 @@ angular.module('stiny')
       , 5000)
     ).error((data, status, headers, config) ->
       $scope.unlockDisabled = false
-      alert("Could not unlock door")
+      stToast.toast("Could not unlock door")
     )
 
   $scope.ringDoorbell = ->
@@ -35,7 +35,7 @@ angular.module('stiny')
         $scope.doorbellDisabled = false
       , 1000)
     ).error((data, status, headers, config) ->
-      alert("Could not ring doorbell")
+      stToast.toast("Could not ring doorbell")
       $scope.doorbellDisabled = false
     )
 
@@ -49,7 +49,7 @@ angular.module('stiny')
         stToast.toast("You're killing the mood, man")
       $scope.partyDisabled = false
     ).error((data, status, headers, config) ->
-      alert("Could not toggle party mode")
+      stToast.toast("Could not toggle party mode")
       $scope.partyDisabled = false
     )
 
