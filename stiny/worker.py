@@ -20,6 +20,7 @@ IN_MAP = {
     'doorbell_button': 22,
     'buzzer': 23,
 }
+INPUT_THROTTLE = 0.1
 
 class Worker(Thread):
     def __init__(self, *args, **kwargs):
@@ -27,6 +28,7 @@ class Worker(Thread):
         super(Worker, self).__init__(*args, **kwargs)
         self._msg_queue = Queue()
         self._state = {key: False for key in OUT_MAP}
+        self._last_read_time = {}
         self._btn_states = {}
         self.party_mode = False
 
@@ -34,12 +36,14 @@ class Worker(Thread):
         if self._isolate:
             return
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(4, GPIO.OUT) # (outside) door latch
-        GPIO.setup(7, GPIO.OUT) # doorbell speaker
-        GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP) # doorbell button
-        GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) # latch button
+        for idx in OUT_MAP.values():
+            GPIO.setup(idx, GPIO.OUT)
+        for idx in IN_MAP.values():
+            GPIO.setup(idx, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    def _twiddle(self, relay, on):
+    def _write(self, relay, on):
+        if self._isolate:
+            return False
         GPIO.output(OUT_MAP[relay], 1 if on else 0)
 
     def _get(self, relay):
@@ -48,6 +52,11 @@ class Worker(Thread):
         return not GPIO.input(IN_MAP[relay])
 
     def _get_input(self, relay):
+        now = time.time()
+        # Sometimes the input switches jitter, so throttle the changes.
+        if self._last_read_time.get(relay, 0) + INPUT_THROTTLE > now:
+            return False, None
+        self._last_read_time[relay] = now
         state = self._get(relay)
         changed = state != self._btn_states.get(relay)
         self._btn_states[relay] = state
@@ -125,6 +134,6 @@ class Worker(Thread):
 
             if not self._isolate:
                 for relay, on in self._state.iteritems():
-                    self._twiddle(relay, on)
+                    self._write(relay, on)
 
             time.sleep(0.01)
