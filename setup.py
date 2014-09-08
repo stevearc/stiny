@@ -45,6 +45,9 @@ if __name__ == "__main__":
             'paste.app_factory': [
                 'main = stiny:main',
             ],
+            'paste.filter_app_factory': [
+                'security_headers = stiny.security:SecurityHeaders',
+            ],
         },
         install_requires=REQUIREMENTS,
         tests_require=REQUIREMENTS + TEST_REQUIREMENTS,

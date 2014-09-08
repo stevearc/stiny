@@ -1,5 +1,6 @@
 [app:main]
 use = egg:stiny
+filter-with = security-headers
 
 pyramid.debug = false
 pyramid.reload_templates = false
@@ -26,6 +27,12 @@ google.client_id = 403790963196-mmg0f7lir89a8olv6jn6oa1mhq5v4h3d.apps.googleuser
 auth.arcangeli07@gmail.com = admin
 auth.mason@masonglidden.com = admin
 auth.emmarion@gmail.com = admin
+
+[filter:security-headers]
+use = egg:stiny#security_headers
+frame_options = DENY
+xss_protection = 1; mode=block
+content_type_options = nosniff
 
 ###
 # wsgi server configuration
