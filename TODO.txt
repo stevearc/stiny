@@ -1,3 +1,2 @@
-Set party mode with a datetime range
 documentation
 # fix the tunnel timeouts

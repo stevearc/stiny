@@ -24,7 +24,7 @@ TEST_REQUIREMENTS = []
 if __name__ == "__main__":
     setup(
         name='stiny',
-        version="0.1-4-gf59a02a",
+        version="0.1-7-g5aaffb3",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
         classifiers=[

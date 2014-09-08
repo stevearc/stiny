@@ -107,6 +107,21 @@ func css(debug bool) []*pike.Graph {
 	return graphs
 }
 
+func img(debug bool) []*pike.Graph {
+	graphs := make([]*pike.Graph, 0, 3)
+
+	g := pike.NewGraph("app.html")
+	p := pike.Glob("stiny/static", "img/*.png")
+	if debug {
+		p = p.Pipe(pike.ChangeFilter())
+	}
+	p = p.Pipe(pike.Write("stiny/gen"))
+	g.Add(p)
+	graphs = append(graphs, g)
+
+	return graphs
+}
+
 func makeAllGraphs(watch bool) []*pike.Graph {
 	os.RemoveAll("stiny/gen")
 
@@ -114,6 +129,7 @@ func makeAllGraphs(watch bool) []*pike.Graph {
 
 	allGraphs = append(allGraphs, javascript(watch)...)
 	allGraphs = append(allGraphs, css(watch)...)
+	allGraphs = append(allGraphs, img(watch)...)
 	return allGraphs
 }
 

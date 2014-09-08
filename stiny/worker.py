@@ -1,4 +1,6 @@
 import time
+from .models import State
+from datetime import datetime
 
 import logging
 from multiprocessing import Queue
@@ -24,13 +26,13 @@ INPUT_THROTTLE = 0.1
 
 class Worker(Thread):
     def __init__(self, *args, **kwargs):
+        self.db = kwargs.pop('engine')
         self._isolate = kwargs.pop('isolate', False)
         super(Worker, self).__init__(*args, **kwargs)
         self._msg_queue = Queue()
         self._state = {key: False for key in OUT_MAP}
         self._last_read_time = {}
         self._btn_states = {}
-        self.party_mode = False
 
     def setup(self):
         if self._isolate:
@@ -65,7 +67,13 @@ class Worker(Thread):
     def _listen_for_inputs(self):
         changed, state = self._get_input('doorbell_button')
         if changed:
-            if self.party_mode and state:
+            now = datetime.utcnow()
+            party_mode = False
+            for party in self.db(State).filter(State.start < now, name='party').gen():
+                if now < party.end:
+                    party_mode = True
+                    break
+            if party_mode and state:
                 self.do('on_off', delay=4, duration=3, relay='outside_latch')
             self.do('on' if state else 'off', relay='doorbell')
 
@@ -104,12 +112,6 @@ class Worker(Thread):
     def do_on_off(self, relay, duration):
         self.do_on(relay)
         self.do('off', delay=duration, relay=relay)
-
-    def do_party(self, on):
-        self.party_mode = on
-
-    def do_party_toggle(self):
-        self.party_mode = not self.party_mode
 
     def do(self, command, delay=None, run_after=None, **kwargs):
         """ Thread-safe way to enqueue a message """

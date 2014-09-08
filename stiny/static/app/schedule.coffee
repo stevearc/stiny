@@ -8,12 +8,18 @@ angular.module('stiny')
       permReq: ['$http', ($http) ->
         return $http.get('/api/home/perm_schedule')
       ]
+      partyReq: ['$http', ($http) ->
+        return $http.get('/api/home/party_schedule')
+      ]
   })
 ])
 
-.controller('ScheduleCtrl', ['$scope', '$http', '$filter', 'stToast', 'permReq',
-($scope, $http, $filter, stToast, permReq) ->
+.controller('ScheduleCtrl', ['$scope', '$http', '$filter', 'stToast', 'permReq', 'partyReq',
+($scope, $http, $filter, stToast, permReq, partyReq) ->
   $scope.schedulePerms = permReq.data.perms
+  $scope.scheduleParties = partyReq.data.schedule
+  $scope.collapseUserSchedule = true
+  $scope.collapsePartySchedule = true
   $scope.perms = {
     unlock: true
   }
@@ -26,6 +32,35 @@ angular.module('stiny')
     else
       format = 'MMM d, yyyy HH:MM'
     return $filter('date')(date, format)
+
+  $scope.removeParty = (index) ->
+    party = $scope.scheduleParties[index]
+    data =
+      start: Math.floor(party.start / 1000)
+    $http.post("/api/home/party_schedule_del", data).success((data, status, headers, config) ->
+      $scope.scheduleParties.splice(index, 1)
+    ).error((data, status, headers, config) ->
+      stToast.toast("Could not delete")
+    )
+
+  $scope.scheduleParty = ->
+    if $scope.partyEnd < $scope.partyStart
+      stToast.toast("Party can't end before it starts")
+      return
+
+    $scope.schedulingParty = true
+    data = {
+      start: Math.floor($scope.partyStart.getTime() / 1000)
+      end: Math.floor($scope.partyEnd.getTime() / 1000)
+    }
+    $http.post("/api/home/party_schedule", data).success((data, status, headers, config) ->
+      $scope.schedulingParty = false
+      $scope.collapsePartySchedule = true
+      $scope.scheduleParties.push(data.party)
+    ).error((data, status, headers, config) ->
+      $scope.schedulingParty = false
+      stToast.toast("Error saving party")
+    )
 
   $scope.remove = (index) ->
     perm = $scope.schedulePerms[index]
@@ -62,6 +97,7 @@ angular.module('stiny')
       $scope.scheduling = false
       $scope.schedulePerms.push(data.perm)
       $scope.email = ''
+      $scope.collapseUserSchedule = true
     ).error((data, status, headers, config) ->
       $scope.scheduling = false
       stToast.toast("Error saving schedule")

@@ -1,6 +1,6 @@
 import calendar
 from flywheel import Engine
-from .models import UserPerm
+from .models import UserPerm, State
 import json
 import os
 import posixpath
@@ -193,14 +193,14 @@ def includeme(config):
         secret_key = os.environ['STINY_AWS_SECRET_KEY']
     engine.connect_to_region('us-west-1', access_key=access_key,
                              secret_key=secret_key)
-    engine.register(UserPerm)
+    engine.register(UserPerm, State)
     engine.create_schema()
     config.registry.engine = engine
     config.add_request_method(lambda r: r.registry.engine, 'db', reify=True)
 
     # Start the worker that interfaces with the relays
     from .worker import Worker
-    worker = Worker(isolate=asbool(settings.get('pi.debug', False)))
+    worker = Worker(engine=engine, isolate=asbool(settings.get('pi.debug', False)))
     worker.daemon = True
     worker.start()
     config.registry.worker = worker

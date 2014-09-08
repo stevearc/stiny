@@ -19,7 +19,10 @@ def index_view(request):
     secure = asbool(request.registry.settings.get('session.secure', False))
     request.response.set_cookie('CSRF-Token', request.session.get_csrf_token(),
                                 secure=secure)
-    return {}
+    prefix = request.registry.settings.get('pike.url_prefix', 'gen').strip('/')
+    return {
+        'prefix': '/' + prefix,
+    }
 
 
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)

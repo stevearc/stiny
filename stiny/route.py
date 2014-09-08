@@ -26,7 +26,7 @@ def includeme(config):
 
     config.add_route('doorbell', '/api/home/doorbell')
     config.add_route('unlock', '/api/home/unlock')
-    config.add_route('party', '/api/home/party')
-    config.add_route('party_toggle', '/api/home/party_toggle')
     config.add_route('perm_schedule', '/api/home/perm_schedule')
     config.add_route('perm_schedule_del', '/api/home/perm_schedule_del')
+    config.add_route('party_schedule', '/api/home/party_schedule')
+    config.add_route('party_schedule_del', '/api/home/party_schedule_del')

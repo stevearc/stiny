@@ -3,7 +3,7 @@ from flywheel import ConditionalCheckFailedException
 from pyramid.view import view_config
 from pyramid_duh import argify
 
-from .models import UserPerm
+from .models import UserPerm, State
 
 
 @view_config(route_name='unlock', request_method='POST', permission='unlock')
@@ -16,27 +16,6 @@ def unlock(request):
 def ring_doorbell(request):
     request.worker.do('on_off', relay='doorbell', duration=0.1)
     return request.response
-
-
-@view_config(
-    route_name='party_toggle',
-    request_method='POST',
-    renderer='json',
-    permission='admin')
-def party_toggle(request):
-    mode = request.worker.party_mode
-    request.worker.do('party_toggle')
-    return {
-        'party': not mode,
-    }
-
-
-@view_config(route_name='party', request_method='GET', renderer='json')
-def party(request):
-    mode = request.worker.party_mode
-    return {
-        'party': mode,
-    }
 
 
 @view_config(route_name='perm_schedule', request_method='GET',
@@ -68,4 +47,36 @@ def add_perm_schedule(request, email, perms, start, end):
 @argify(start=datetime)
 def delete_perm_schedule(request, email, start):
     request.db(UserPerm).filter(email=email, start=start).delete()
+    return {}
+
+
+@view_config(route_name='party_schedule', request_method='GET',
+             permission='admin', renderer='json')
+def party_schedule(request):
+    parties = request.db.scan(State).filter(name='party').all()
+    parties.sort(key=lambda p: p.start)
+    return {
+        'schedule': parties
+    }
+
+
+@view_config(route_name='party_schedule', request_method='POST',
+             permission='admin', renderer='json')
+@argify(start=datetime, end=datetime)
+def add_party_schedule(request, start, end):
+    party = State('party', start, end)
+    try:
+        request.db.save(party, overwrite=False)
+    except ConditionalCheckFailedException:
+        return request.error('dupe', "Party already scheduled for that time")
+    return {
+        'party': party
+    }
+
+
+@view_config(route_name='party_schedule_del', request_method='POST',
+             permission='admin', renderer='json')
+@argify(start=datetime)
+def delete_party_schedule(request, start):
+    request.db(State).filter(name='party', start=start).delete()
     return {}
