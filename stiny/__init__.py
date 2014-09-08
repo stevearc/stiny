@@ -1,15 +1,14 @@
-import calendar
-from flywheel import Engine
-from .models import UserPerm, State
-import json
+""" Stiny - A home automation assistant """
 import os
 import posixpath
-from collections import defaultdict
 
+import calendar
 import datetime
+import json
+from collections import defaultdict
+from flywheel import Engine
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
-from pyramid.security import Authenticated
 from pyramid.config import Configurator
 from pyramid.events import NewRequest, subscriber
 from pyramid.httpexceptions import exception_response
@@ -17,6 +16,8 @@ from pyramid.renderers import JSON, render, render_to_response
 from pyramid.session import check_csrf_token
 from pyramid.settings import asbool, aslist
 from pyramid_beaker import session_factory_from_settings
+
+from .models import UserPerm, State
 
 
 def to_json(value):
@@ -34,6 +35,7 @@ json_renderer.add_adapter(defaultdict,
 
 @subscriber(NewRequest)
 def check_csrf(event):
+    """ Check the CSRF token on all non-GET requests. """
     request = event.request
     if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
         check_csrf_token(event.request)
@@ -84,6 +86,17 @@ def _raise_error(request, error, message='Unknown error', status_code=400):
 
 
 def _assets(request, key):
+    """
+    Get a list of built assets.
+
+    Asset list pulled from files.json, which is written by build.go
+
+    Parameters
+    ----------
+    key : str
+        String identifier for a list of assets
+
+    """
     filename = os.path.join(os.path.dirname(__file__), 'files.json')
     settings = request.registry.settings
     debug = asbool(settings.get('pike.debug', False))
@@ -96,6 +109,7 @@ def _assets(request, key):
 
 
 def _constants(request):
+    """ Create a dictionary of declared client constants. """
     data = {}
     for k, v in request.registry.client_constants.iteritems():
         if callable(v):
@@ -106,11 +120,14 @@ def _constants(request):
 
 
 def _auth_callback(userid, request):
+    """ Get permissions for a user with an email. """
     perms = []
+    # If permissions are declared in the config.ini file, just use those.
     setting = request.registry.settings.get('auth.' + userid)
     if setting is not None:
         principals = aslist(setting)
     else:
+        # Otherwise, check DynamoDB for perms.
         now = datetime.datetime.utcnow()
         permlist = request.db(UserPerm) \
             .filter(UserPerm.start < now, email=userid).all()

@@ -7,6 +7,7 @@ from pyramid_duh import argify
 
 @view_config(route_name='logout')
 def logout(request):
+    """ Remove stored user credentials from cookies. """
     request.response.headers.extend(forget(request))
     return request.response
 
@@ -17,7 +18,17 @@ def logout(request):
     renderer='json')
 @argify
 def login(request, access_token):
+    """
+    Validate a google access token and retrieve user's email.
 
+    Returns
+    -------
+    user : str
+        User email.
+    permissions : list
+        List of permissions that the user has.
+
+    """
     resp = requests.get('https://www.googleapis.com/plus/v1/people/me',
                         params={'access_token': access_token})
     if not resp.ok:

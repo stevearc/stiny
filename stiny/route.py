@@ -4,7 +4,12 @@ from pyramid.security import Allow, Authenticated, DENY_ALL, ALL_PERMISSIONS
 
 class Root(object):
 
-    """ Root context """
+    """
+    Root context.
+
+    Defines ACL, not much else.
+
+    """
     __acl__ = [
         [Allow, 'admin', ALL_PERMISSIONS],
         [Allow, 'unlock', 'unlock'],

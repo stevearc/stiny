@@ -15,7 +15,7 @@ LOG = logging.getLogger(__name__)
     permission=NO_PERMISSION_REQUIRED,
     renderer='index.jinja2')
 def index_view(request):
-    """ Root view (/) """
+    """ Root view '/' """
     secure = asbool(request.registry.settings.get('session.secure', False))
     request.response.set_cookie('CSRF-Token', request.session.get_csrf_token(),
                                 secure=secure)
@@ -27,6 +27,7 @@ def index_view(request):
 
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
 def handle_404(context, request):
+    """ Catch the 404 so we don't log an exception. """
     return context
 
 
@@ -40,7 +41,7 @@ def handle_404(context, request):
     permission=NO_PERMISSION_REQUIRED)
 def format_exception(context, request):
     """
-    Catch all app exceptions and render them nicely
+    Catch all app exceptions and render them nicely.
 
     This will keep the status code, but will always return parseable json
 

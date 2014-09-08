@@ -1,8 +1,27 @@
+""" DynamoDB models. """
+
 from datetime import datetime
 from flywheel import Model, Field
 
 
 class UserPerm(Model):
+
+    """
+    A permission grant for a user within a time period.
+
+    Parameters
+    ----------
+    email : str
+        User email. Must be gmail so they can do the G+ signin.
+    start : :class:`~datetime.datetime`
+        The datetime that the permissions are granted.
+    end : :class:`~datetime.datetime`
+        The datetime that the permissions are revoked.
+    perms : set
+        Set of permissions to be granted.
+
+    """
+
     __metadata__ = {
         'throughput': {
             'read': 1,
@@ -27,6 +46,22 @@ class UserPerm(Model):
 
 
 class State(Model):
+
+    """
+    Stored application state.
+
+    Parameters
+    ----------
+    name : str
+        Name of the state being stored.
+    start : :class:`~datetime.datetime`, optional
+        Starting datetime of the state, if the state is scheduled. If not, then
+        this will be the beginning of time.
+    end : :class:`~datetime.datetime`, optional
+        Ending datetime of the state, if the state is scheduled.
+
+    """
+
     __metadata__ = {
         'throughput': {
             'read': 1,

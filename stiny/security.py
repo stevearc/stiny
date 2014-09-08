@@ -1,3 +1,4 @@
+""" WSGI middleware for adding modern security headers to HTTP responses. """
 import re
 from fnmatch import fnmatch
 
