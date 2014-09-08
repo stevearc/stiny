@@ -1,7 +1,6 @@
 angular.module('stiny')
 
 .config(['$routeProvider', 'CONST', ($routeProvider, CONST) ->
-
   $routeProvider.when('/', {
     controller: 'HomeCtrl'
     templateUrl: "#{ CONST.URL_PREFIX }/app/home.html"

@@ -10,7 +10,10 @@ from pyramid.view import view_config
 LOG = logging.getLogger(__name__)
 
 
-@view_config(route_name='root', renderer='index.jinja2')
+@view_config(
+    route_name='root',
+    permission=NO_PERMISSION_REQUIRED,
+    renderer='index.jinja2')
 def index_view(request):
     """ Root view (/) """
     secure = asbool(request.registry.settings.get('session.secure', False))
@@ -22,6 +25,7 @@ def index_view(request):
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
 def handle_404(context, request):
     return context
+
 
 @view_config(
     context=Exception,
@@ -60,4 +64,7 @@ def format_exception(context, request):
     if asbool(request.registry.settings.get('pyramid.debug', False)):
         error['stacktrace'] = traceback.format_exc()
     request.response.status_code = getattr(context, 'status_code', 500)
+    if (request.response.status_code == 403 and
+            request.authenticated_userid is None):
+        request.response.status_code = 401
     return error

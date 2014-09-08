@@ -1,3 +1,3 @@
 angular.module('stiny', [
-  'ngRoute', 'ngTouch', 'ui.bootstrap', 'restangular'
+  'ngRoute', 'ngTouch', 'ui.bootstrap',
 ])

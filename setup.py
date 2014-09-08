@@ -9,12 +9,12 @@ README = open(os.path.join(HERE, 'README.rst')).read()
 CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
 
 REQUIREMENTS = [
-    'passlib',
     'pycrypto',
     'pyramid>=1.5',
     'pyramid_beaker',
     'pyramid_duh>=0.1.2',
     'pyramid_jinja2',
+    'requests',
     'rpi.gpio',
 ]
 
@@ -23,7 +23,7 @@ TEST_REQUIREMENTS = []
 if __name__ == "__main__":
     setup(
         name='stiny',
-        version="0.1",
+        version="0.1-3-gfeaf8d3",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
         classifiers=[
@@ -43,9 +43,6 @@ if __name__ == "__main__":
         entry_points={
             'paste.app_factory': [
                 'main = stiny:main',
-            ],
-            'console_scripts': [
-                'stiny-gen-password = stiny.scripts:gen_password',
             ],
         },
         install_requires=REQUIREMENTS,

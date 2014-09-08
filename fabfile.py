@@ -8,8 +8,16 @@ fab.env.roledefs = {
 }
 
 def _version():
-    return fab.local('git describe --tags --dirty', capture=True)
+    return fab.local('git describe --tags', capture=True)
 
+def _get_var(key):
+    if key not in os.environ:
+        raise Exception("Missing environment variable %r" % key)
+    return os.environ[key]
+
+def _set_var(filename, name, value):
+    fab.local("sed -i -e 's/%s.*/%s = %s/' %s" %
+              (name, name, value.replace('/', '\\/'), filename))
 
 def bundle():
     fab.local('./dl-deps.sh')
@@ -19,9 +27,10 @@ def bundle():
     fab.local('cp prod.ini.tmpl prod.ini')
 
     fab.local("sed -i -e 's/URL_PREFIX/gen\\/%s/' prod.ini" % ref[:8])
-    fab.local("sed -i -e 's/replaceme1/%s/' prod.ini" % b64encode(os.urandom(32)).replace('/', '\\/'))
-    fab.local("sed -i -e 's/replaceme2/%s/' prod.ini" % b64encode(os.urandom(32)).replace('/', '\\/'))
-    fab.local("sed -i -e 's/replaceme3/%s/' prod.ini" % b64encode(os.urandom(32)).replace('/', '\\/'))
+    _set_var('prod.ini', 'session.encrypt_key', _get_var('STINY_ENCRYPT_KEY'))
+    _set_var('prod.ini', 'session.validate_key', _get_var('STINY_VALIDATE_KEY'))
+    _set_var('prod.ini', 'authtkt.secret', _get_var('STINY_AUTH_SECRET'))
+    _set_var('prod.ini', 'google.client_id', _get_var('STINY_GOOGLE_CLIENT_ID'))
 
     version = _version()
     fab.local("sed -i -e 's/version=.*/version=\"%s\",/' setup.py" % version)

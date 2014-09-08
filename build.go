@@ -11,7 +11,7 @@ import (
 func javascript(debug bool) []*pike.Graph {
 	graphs := make([]*pike.Graph, 0, 3)
 
-	p := pike.Glob("stiny/static", "lib/lodash*", "lib/angular.*", "lib/*.js")
+	p := pike.Glob("stiny/static", "lib/angular.*", "lib/*.js")
 	libjs := p
 	if debug {
 		p = p.Pipe(pike.ChangeFilter())

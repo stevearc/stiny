@@ -7,7 +7,14 @@ angular.module('stiny')
   controller: 'NavCtrl'
 ])
 
-.controller('NavCtrl', ['$scope', '$location', 'CONST',
-($scope, $location, CONST) ->
+.controller('NavCtrl', ['$scope', '$location', 'stAuth', 'CONST',
+($scope, $location, stAuth, CONST) ->
+  $scope.logout = ->
+    stAuth.logout()
 
+  $scope.$watch(->
+    stAuth.getUser()
+  , (user) ->
+    $scope.loggedIn = user?
+  )
 ])

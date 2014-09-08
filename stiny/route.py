@@ -20,8 +20,8 @@ def includeme(config):
     config.set_root_factory(Root)
     config.add_route('root', '/')
 
-    config.add_route('logout', '/logout')
-    config.add_route('do_login', '/api/login', request_method='POST')
+    config.add_route('logout', '/api/logout')
+    config.add_route('login', '/api/login', request_method='POST')
 
     config.add_route('doorbell', '/api/home/doorbell')
     config.add_route('unlock', '/api/home/unlock')

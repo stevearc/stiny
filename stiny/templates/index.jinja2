@@ -21,6 +21,8 @@
   <div ng-view></div>
 </div>
 
+<!-- Google libs for sign-in -->
+<script src="https://apis.google.com/js/client:plusone.js" type="text/javascript" charset="utf-8"></script>
 {% for url in request.assets('lib.js') -%}
   <script type="text/javascript" src="{{ url }}"></script>
 {% endfor -%}

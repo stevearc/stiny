@@ -1,32 +1,43 @@
 angular.module('stiny')
 
-.directive('stLogin', ['CONST', (CONST) ->
-  templateUrl: "#{ CONST.URL_PREFIX }/app/login.html"
-  restrict: 'A'
-  replace: true
-  controller: 'LoginCtrl'
+.config(['$routeProvider', 'CONST', ($routeProvider, CONST) ->
+  $routeProvider.when('/login', {
+    controller: 'LoginCtrl'
+    templateUrl: "#{ CONST.URL_PREFIX }/app/login.html"
+  })
 ])
 
-.controller('LoginCtrl', ['$scope', '$location', '$http',
-($scope, $location, $http) ->
+.controller('LoginCtrl', ['$scope', '$http', '$location', 'stAuth', 'CONST',
+($scope, $http, $location, stAuth, CONST) ->
+  onLogin = (authResult) ->
+    if authResult.error == 'user_signed_out'
+      # FIXME: logout doesn't work yet
+      # stAuth.serverLogout()
+      return
+    return unless authResult.status.signed_in
 
-  $scope.login = (event, form) ->
-    $scope.error = null
-    data = {
-      username: form.username.$modelValue
-      password: form.password.$modelValue
-    }
-
-    $scope.processing = true
-    $http.post("/api/login", data).success((data, status, headers, config) ->
-      if data.error
-        $scope.processing = false
-        $scope.error = data.error
-      else
-        location.reload()
+    $http.post('/api/login', {access_token: authResult.access_token}).success((data, status, headers, config) ->
+      stAuth.setUser data.user
+      if $location.url() == '/login'
+        $location.url('/')
     ).error((data, status, headers, config) ->
-      $scope.processing = false
-      $scope.error = "Server error"
+      alert("Login failed!")
     )
+
+  $scope.loginParams = {
+    clientid: CONST.GOOGLE_CLIENT_ID
+    cookiepolicy: 'single_host_origin'
+    scope: 'email'
+    callback: onLogin
+  }
+])
+
+.directive('stGoogleLogin', ['CONST', (CONST) ->
+  restrict: 'A'
+  replace: true
+  scope:
+    parameters: '=stGoogleLogin'
+  link: (scope, element, attrs) ->
+    gapi.signin.render(element[0], scope.parameters)
 
 ])

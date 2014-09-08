@@ -28,8 +28,6 @@ main() {
     dl http://code.angularjs.org/1.2.14/angular-touch.min.js
     dl http://code.angularjs.org/1.2.14/angular-route.min.js
     dl https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.11.0.min.js
-    dl https://raw.github.com/mgonto/restangular/master/dist/restangular.min.js
-    dl https://raw.github.com/lodash/lodash/2.4.1/dist/lodash.min.js
     dl https://raw.githubusercontent.com/ftlabs/fastclick/3497d2e92ccc8a959c7efb326c0fc437302d5bcf/lib/fastclick.js
 
     if [ ! -e bootstrap-3.1.1 ]; then

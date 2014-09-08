@@ -1,27 +1,14 @@
 <div class="container">
-  <div class="row vspace20">
-    <div class="col-xs-12 col-sm-offset-2 col-sm-8 col-md-offset-4 col-md-4">
-      <form rr-form role="form" name="form" class="vspace10" ng-submit="login($event, form)">
-        <div class="form-group">
-          <label class="sr-only">Email</label>
-          <input type="text" name="username" ng-model="username"
-            class="form-control" placeholder="Username" st-focus="true" required>
-        </div>
-
-        <div class="form-group">
-          <label class="sr-only">Password</label>
-          <input name="password" type="password" ng-model="password"
-            class="form-control" placeholder="Password" required>
-        </div>
-
-        <div class="text-danger vbspace10" ng-show="error != null">
-          {{ error }}
-        </div>
-
-        <div class="form-group">
-          <input name="submit" type="submit" class="btn btn-success hfill" ng-disabled="processing">
-        </div>
-      </form>
-    </div>
+  <div class="row vspace20 text-center">
+    <button st-google-login="loginParams"></button>
+    <!-- <span> -->
+    <!--   <span -->
+    <!--     class="g-signin" -->
+    <!--     data-callback="signinCallback" -->
+    <!--     data-clientid="{{ client_id }}" -->
+    <!--     data-cookiepolicy="single_host_origin" -->
+    <!--     data-scope="email"> -->
+    <!--   </span> -->
+    <!-- </span> -->
   </div>
 </div>

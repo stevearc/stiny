@@ -105,7 +105,8 @@ def _constants(request):
 
 def _auth_callback(userid, request):
     perms = [Authenticated]
-    perms.append('admin')
+    principles = aslist(request.registry.settings.get('auth.' + userid, []))
+    perms.extend(principles)
     return perms
 
 
@@ -141,6 +142,8 @@ def includeme(config):
     prefix = settings.get('pike.url_prefix', 'gen').strip('/')
     config.registry.client_constants = {
         'URL_PREFIX': '/' + prefix,
+        'USER': lambda r: r.authenticated_userid,
+        'GOOGLE_CLIENT_ID': settings.get('google.client_id'),
     }
 
     config.registry.assets = None
