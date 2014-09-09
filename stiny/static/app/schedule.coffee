@@ -28,9 +28,9 @@ angular.module('stiny')
   $scope.formatDate = (timestamp) ->
     date = new Date(timestamp)
     if date.getYear() == today.getYear()
-      format = 'MMM d HH:MM'
+      format = 'MMM d HH:mm'
     else
-      format = 'MMM d, yyyy HH:MM'
+      format = 'MMM d, yyyy HH:mm'
     return $filter('date')(date, format)
 
   $scope.removeParty = (index) ->
@@ -117,7 +117,6 @@ angular.module('stiny')
 .controller('RangePickerCtrl', ['$scope', ($scope) ->
   isoDate = new Date().toISOString()
   $scope.today = isoDate.slice(0, isoDate.indexOf('T'))
-  $scope.foo = 'fuck'
   $scope.startDate = new Date()
   $scope.endDate = new Date()
   $scope.startTime = new Date()
