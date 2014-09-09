@@ -33,6 +33,7 @@ angular.module('stiny')
   }
 ])
 
+# Directive to render the G+ login button
 .directive('stGoogleLogin', ['CONST', (CONST) ->
   restrict: 'A'
   replace: true
@@ -40,5 +41,4 @@ angular.module('stiny')
     parameters: '=stGoogleLogin'
   link: (scope, element, attrs) ->
     gapi.signin.render(element[0], scope.parameters)
-
 ])

@@ -1,5 +1,6 @@
 angular.module('stiny')
 
+# Service to present short notifications to the user
 .factory('stToast', ['$timeout', ($timeout) ->
   {
     toasts: []

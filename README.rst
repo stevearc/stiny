@@ -3,6 +3,16 @@ Stiny
 
 Home automation assistant
 
+Structure
+---------
+The core webserver is a WSGI app running the pyramid framework. Those are the
+``stiny/*.py`` files. The webserver also starts a worker thread (in
+``stiny/worker.py``) that interfaces with the relays. The only webpage rendered
+by the python app is inside ``stiny/templates/index.jinja2``; all page changes
+thereafter are loaded in via angular. Javascript/css libraries are in
+``stiny/static/lib``, and the client-side application code is in
+``stiny/static/app``.
+
 Local Development
 -----------------
 First you need to download all the javascript/css libraries that we're using.

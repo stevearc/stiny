@@ -1,5 +1,6 @@
 angular.module('stiny')
 
+# Parse out constants that were rendered to index.jinja2
 .constant('CONST', angular.fromJson(angular.element(document.body).attr('constants')))
 
 .config(['$httpProvider', ($httpProvider) ->
@@ -11,6 +12,7 @@ angular.module('stiny')
   FastClick.attach(document.body)
 )
 
+# Directive for focusing on an element
 .directive('stFocus', ['$timeout', ($timeout) ->
   (scope, element, attrs) ->
     scope.$watch(attrs.stFocus,
@@ -43,6 +45,7 @@ angular.module('stiny')
   ])
 ])
 
+# Object for handling login/credential/permissions methods
 .factory('stAuth', ['$http', '$route', '$location', '$injector',
 ($http, $route, $location, $injector) -> {
     _user: null
@@ -68,6 +71,15 @@ angular.module('stiny')
   }
 ])
 
+# On page load, set the user & permissions into stAuth
+.run(['stAuth', 'CONST', (stAuth, CONST) ->
+  if CONST.USER?
+    stAuth.setUser(CONST.USER)
+  if CONST.PERMISSIONS?
+    stAuth.setPermissions(CONST.PERMISSIONS)
+])
+
+# Directive that shows an element only if the user has a permission
 .directive('stPermShow', ['stAuth', (stAuth) ->
   restrict: 'A'
   replace: true
@@ -81,11 +93,4 @@ angular.module('stiny')
       else
         element.addClass('hide')
     )
-])
-
-.run(['stAuth', 'CONST', (stAuth, CONST) ->
-  if CONST.USER?
-    stAuth.setUser(CONST.USER)
-  if CONST.PERMISSIONS?
-    stAuth.setPermissions(CONST.PERMISSIONS)
 ])
