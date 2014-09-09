@@ -107,15 +107,18 @@ class Worker(Thread):
 
         changed, state = self._get_input('doorbell_button')
         if changed:
-            now = datetime.utcnow()
-            party_mode = False
-            for party in self.db(State).filter(State.start < now, name='party').gen():
-                if now < party.end:
-                    party_mode = True
-                    break
-            if party_mode and state:
-                self.do('on_off', delay=4, duration=3, relay='outside_latch')
             self.do('on' if state else 'off', relay='doorbell')
+            if not state:
+                now = datetime.utcnow()
+                party_mode = False
+                states = self.db(State).filter(State.start < now, name='party')
+                for party in states:
+                    if now < party.end:
+                        party_mode = True
+                        break
+                if party_mode and state:
+                    self.do('on_off', delay=4, duration=3,
+                            relay='outside_latch')
 
         changed, state = self._get_input('buzzer')
         if changed:
