@@ -116,7 +116,7 @@ class Worker(Thread):
                     if now < party.end:
                         party_mode = True
                         break
-                if party_mode and state:
+                if party_mode:
                     self.do('on_off', delay=4, duration=3,
                             relay='outside_latch')
 
