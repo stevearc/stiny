@@ -1,4 +1,5 @@
 """ Stiny - A home automation assistant """
+import requests
 import os
 import posixpath
 
@@ -139,6 +140,16 @@ def _auth_callback(userid, request):
     return perms
 
 
+def _call_worker(request, worker, command, **kwargs):
+    host = request.registry.settings['worker.' + worker]
+    fullpath = host + '/do/' + command
+    headers = {'content-type': 'application/json'}
+    response = requests.post(fullpath, data=json.dumps(kwargs),
+                             headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+
 def includeme(config):
     """ Set up and configure the app """
     settings = config.get_settings()
@@ -215,14 +226,7 @@ def includeme(config):
     config.registry.engine = engine
     config.add_request_method(lambda r: r.registry.engine, 'db', reify=True)
 
-    # Start the worker that interfaces with the relays
-    from .worker import Worker
-    worker = Worker(engine=engine, isolate=asbool(settings.get('pi.debug', False)))
-    worker.daemon = True
-    worker.start()
-    config.registry.worker = worker
-    config.add_request_method(lambda r: r.registry.worker, name='worker',
-                              reify=True)
+    config.add_request_method(_call_worker, name='call_worker')
 
     config.scan()
 

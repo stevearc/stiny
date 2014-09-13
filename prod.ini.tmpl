@@ -19,6 +19,8 @@ authtkt.secret = replaceme
 
 pike.url_prefix = URL_PREFIX
 
+worker.door = http://localhost:9000
+
 aws.access_key =
 aws.secret_key =
 
@@ -38,10 +40,16 @@ content_type_options = nosniff
 # wsgi server configuration
 ###
 
-[server:main]
-use = egg:waitress#main
-host = 0.0.0.0
-port = 6543
+[uwsgi]
+paste = config:%p
+paste-logger = %p
+socket = 127.0.0.1:3034
+master = true
+processes = 5
+reload-mercy = 15
+worker-reload-mercy = 15
+max-requests = 1000
+virtualenv = /envs/stiny
 
 ###
 # logging configuration

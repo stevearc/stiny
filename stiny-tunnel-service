@@ -29,15 +29,6 @@ case "$1" in
         fi
         ;;
 
-  reload|force-reload)
-        log_daemon_msg "Reloading Stiny" "stiny-tunnel" || true
-        if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile /var/run/stiny-tunnel.pid --exec /home/pi/ssh-tunnel.sh; then
-            log_end_msg 0 || true
-        else
-            log_end_msg 1 || true
-        fi
-        ;;
-
   restart)
         log_daemon_msg "Restarting Stiny" "stiny-tunnel" || true
         start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/stiny-tunnel.pid
@@ -53,7 +44,7 @@ case "$1" in
         ;;
 
   *)
-        log_action_msg "Usage: /etc/init.d/stiny-tunnel {start|stop|reload|force-reload|restart|status}" || true
+        log_action_msg "Usage: /etc/init.d/stiny-tunnel {start|stop|restart|status}" || true
         exit 1
 esac
 

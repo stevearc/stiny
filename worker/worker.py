@@ -1,12 +1,11 @@
-""" Worker thread that interfaces with the relays. """
-import time
-
 import logging
-from datetime import datetime
+import time
 from multiprocessing import Queue
 from threading import Thread
 
-from .models import State
+from datetime import datetime
+
+from models import State
 
 
 LOG = logging.getLogger(__name__)
@@ -16,18 +15,9 @@ try:
 except RuntimeError:
     LOG.warn("Not running on Raspberry Pi; controls unavailable")
 
-OUT_MAP = {
-    'doorbell': 7,
-    'outside_latch': 4,
-}
-IN_MAP = {
-    'doorbell_button': 22,
-    'buzzer': 23,
-}
-INPUT_THROTTLE = 0.1
 
+class BaseWorker(Thread):
 
-class Worker(Thread):
     """
     Worker thread that interfaces with relays.
 
@@ -37,18 +27,27 @@ class Worker(Thread):
     ----------
     engine : :class:`~flywheel.Engine`
         Database engine for querying application state.
+    in_map : dict, optional
+        Mapping for names of input relays to the relay index
+    out_map : dict, optional
+        Mapping for names of output relays to the relay index
     isolate : bool, optional
         If True, don't attempt to send signals to the relays. Useful for local
         development (default False)
+    input_throttle : float, optional
+        Relay states may change at most once per this time range (default 0.1)
 
     """
 
     def __init__(self, *args, **kwargs):
         self.db = kwargs.pop('engine')
         self._isolate = kwargs.pop('isolate', False)
-        super(Worker, self).__init__(*args, **kwargs)
+        self._in_map = kwargs.pop('in_map', {})
+        self._out_map = kwargs.pop('out_map', {})
+        self._input_throttle = kwargs.pop('input_throttle', 0.1)
+        super(BaseWorker, self).__init__(*args, **kwargs)
         self._msg_queue = Queue()
-        self._state = {key: False for key in OUT_MAP}
+        self._state = {key: False for key in self._out_map}
         self._last_read_time = {}
         self._btn_states = {}
 
@@ -57,16 +56,16 @@ class Worker(Thread):
         if self._isolate:
             return
         GPIO.setmode(GPIO.BCM)
-        for idx in OUT_MAP.values():
+        for idx in self._out_map.values():
             GPIO.setup(idx, GPIO.OUT)
-        for idx in IN_MAP.values():
+        for idx in self._in_map.values():
             GPIO.setup(idx, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def _write(self, relay, on):
         """ Write a state to a relay. """
         if self._isolate:
             return False
-        GPIO.output(OUT_MAP[relay], 1 if on else 0)
+        GPIO.output(self._out_map[relay], 1 if on else 0)
 
     def _get(self, relay):
         """
@@ -79,7 +78,7 @@ class Worker(Thread):
         """
         if self._isolate:
             return False
-        return not GPIO.input(IN_MAP[relay])
+        return not GPIO.input(self._in_map[relay])
 
     def _get_input(self, relay):
         """
@@ -94,7 +93,7 @@ class Worker(Thread):
         """
         now = time.time()
         # Sometimes the input switches jitter, so throttle the changes.
-        if self._last_read_time.get(relay, 0) + INPUT_THROTTLE > now:
+        if self._last_read_time.get(relay, 0) + self._input_throttle > now:
             return False, None
         self._last_read_time[relay] = now
         state = self._get(relay)
@@ -104,25 +103,19 @@ class Worker(Thread):
 
     def _listen_for_inputs(self):
         """ Check all inputs and queue commands if activated. """
-
-        changed, state = self._get_input('doorbell_button')
-        if changed:
-            self.do('on' if state else 'off', relay='doorbell')
-            if not state:
-                now = datetime.utcnow()
-                party_mode = False
-                states = self.db(State).filter(State.start < now, name='party')
-                for party in states:
-                    if now < party.end:
-                        party_mode = True
-                        break
-                if party_mode:
-                    self.do('on_off', delay=4, duration=3,
-                            relay='outside_latch')
-
-        changed, state = self._get_input('buzzer')
-        if changed:
-            self.do('on' if state else 'off', relay='outside_latch')
+        for name in self._in_map:
+            changed, state = self._get_input(name)
+            if changed:
+                method_name = 'on_%s' % name
+                LOG.debug("Received input %s", method_name)
+                meth = getattr(self, method_name, None)
+                if meth is None:
+                    LOG.warning("Unhandled input %r", method_name)
+                    continue
+                try:
+                    meth(state)
+                except TypeError:
+                    LOG.exception("Bad arguments")
 
     def _process_messages(self):
         """ Process all messages in the queue. """
@@ -137,6 +130,7 @@ class Worker(Thread):
                 continue
 
             method_name = 'do_%s' % msg['command']
+            LOG.debug("Running %s, %s", method_name, msg['data'])
             meth = getattr(self, method_name, None)
             if meth is None:
                 LOG.error("Bad command %r", method_name)
@@ -213,3 +207,42 @@ class Worker(Thread):
                     self._write(relay, on)
 
             time.sleep(0.01)
+
+
+class DoorWorker(BaseWorker):
+
+    """ Worker for the door buzzer and doorbell relays.  """
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('out_map', {
+            'doorbell': 7,
+            'outside_latch': 4,
+        })
+        kwargs.setdefault('in_map', {
+            'doorbell_button': 22,
+            'buzzer': 23,
+        })
+        super(DoorWorker, self).__init__(*args, **kwargs)
+
+    def on_doorbell_button(self, state):
+        """
+        Ring doorbell when doorbell is pressed.
+
+        If in party mode, also open the door.
+
+        """
+        self.do('on' if state else 'off', relay='doorbell')
+        if not state:
+            now = datetime.utcnow()
+            party_mode = False
+            states = self.db(State).filter(State.start < now, name='party')
+            for party in states:
+                if now < party.end:
+                    party_mode = True
+                    break
+            if party_mode:
+                self.do('on_off', delay=4, duration=3,
+                        relay='outside_latch')
+
+    def on_buzzer(self, state):
+        """ Open the door when buzzer is pressed """
+        self.do('on' if state else 'off', relay='outside_latch')

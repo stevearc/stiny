@@ -14,7 +14,7 @@ set -e
 case "$1" in
   start)
         log_daemon_msg "Starting Stiny" "stiny" || true
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /home/pi/stiny_env/bin/pserve -- /home/pi/prod.ini; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
@@ -29,19 +29,10 @@ case "$1" in
         fi
         ;;
 
-  reload|force-reload)
-        log_daemon_msg "Reloading Stiny" "stiny" || true
-        if start-stop-daemon --stop --signal 1 --quiet --oknodo --pidfile /var/run/stiny.pid --exec /home/pi/stiny_env/bin/pserve; then
-            log_end_msg 0 || true
-        else
-            log_end_msg 1 || true
-        fi
-        ;;
-
   restart)
         log_daemon_msg "Restarting Stiny" "stiny" || true
         start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/stiny.pid
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /home/pi/stiny_env/bin/pserve -- /home/pi/prod.ini; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
@@ -49,11 +40,11 @@ case "$1" in
         ;;
 
   status)
-        status_of_proc -p /var/run/stiny.pid /home/pi/stiny_env/bin/pserve stiny && exit 0 || exit $?
+        status_of_proc -p /var/run/stiny.pid /usr/bin/python stiny && exit 0 || exit $?
         ;;
 
   *)
-        log_action_msg "Usage: /etc/init.d/stiny {start|stop|reload|force-reload|restart|status}" || true
+        log_action_msg "Usage: /etc/init.d/stiny {start|stop|restart|status}" || true
         exit 1
 esac
 

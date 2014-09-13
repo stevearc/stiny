@@ -24,7 +24,7 @@ TEST_REQUIREMENTS = []
 if __name__ == "__main__":
     setup(
         name='stiny',
-        version="0.1-12-gb0329fd",
+        version="0.1-15-g2c42e6e",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
         classifiers=[
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         platforms='any',
         include_package_data=True,
         zip_safe=False,
-        packages=find_packages(exclude=('tests',)),
+        packages=find_packages(exclude=('worker',)),
         entry_points={
             'paste.app_factory': [
                 'main = stiny:main',
