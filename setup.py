@@ -48,6 +48,9 @@ if __name__ == "__main__":
             'paste.filter_app_factory': [
                 'security_headers = stiny.security:SecurityHeaders',
             ],
+            'console_scripts': [
+                'stiny-calendar = stiny.scripts:do_calendar',
+            ],
         },
         install_requires=REQUIREMENTS,
         tests_require=REQUIREMENTS + TEST_REQUIREMENTS,

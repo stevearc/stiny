@@ -15,6 +15,8 @@ CAL_ID = 'klpl9hfdirojidnukjkbpbq50c@group.calendar.google.com'
 
 
 def dump_dt(dt):
+    if dt is None:
+        return None
     return dt.isoformat('T') + 'Z'
 
 
@@ -54,16 +56,19 @@ class Calendar(object):
         http = credentials.authorize(http)
         self._service = build(serviceName='calendar', version='v3', http=http)
 
-    def iter_active_events(self):
+    def iter_events(self, start=None, end=None):
         events = self._service.events()
-        start = datetime.utcnow() - timedelta(minutes=5)
-        end = datetime.utcnow() + timedelta(minutes=5)
         req = events.list(calendarId=CAL_ID, timeMin=dump_dt(start),
                           timeMax=dump_dt(end))
         response = req.execute()
         events = response['items']
         for event in events:
             yield event
+
+    def iter_active_events(self, past=timedelta(minutes=5),
+                           future=timedelta(minutes=5)):
+        now = datetime.utcnow()
+        return self.iter_events(now - past, now + future)
 
     def is_party_time(self):
         for event in self.iter_active_events():
