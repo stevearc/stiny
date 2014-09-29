@@ -9,14 +9,14 @@ README = open(os.path.join(HERE, 'README.rst')).read()
 CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
 
 REQUIREMENTS = [
-    'flywheel',
+    'google-api-python-client',
     'pycrypto',
     'pyramid>=1.5',
     'pyramid_beaker',
     'pyramid_duh>=0.1.2',
     'pyramid_jinja2',
+    'python-gflags',
     'requests',
-    'rpi.gpio',
 ]
 
 TEST_REQUIREMENTS = []
@@ -24,7 +24,7 @@ TEST_REQUIREMENTS = []
 if __name__ == "__main__":
     setup(
         name='stiny',
-        version="0.1-15-g2c42e6e",
+        version="0.1-16-gf7c0402",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
         classifiers=[

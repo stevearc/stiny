@@ -37,8 +37,17 @@ def create_prod_config(name):
     _set_var(name, 'authtkt.secret', _get_var('STINY_AUTH_SECRET'))
     _set_var(name, 'google.client_id',
              _get_var('STINY_GOOGLE_CLIENT_ID'))
-    _set_var(name, 'aws.access_key', _get_var('STINY_AWS_ACCESS_KEY'))
-    _set_var(name, 'aws.secret_key', _get_var('STINY_AWS_SECRET_KEY'))
+    _set_var(name, 'google.server_client_id',
+             _get_var('STINY_SERVER_GOOGLE_CLIENT_ID'))
+    _set_var(name, 'google.server_client_secret',
+             _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET'))
+
+
+def write_credentials(filename):
+    from stiny.gutil import Calendar
+    client_id = _get_var('STINY_SERVER_GOOGLE_CLIENT_ID')
+    client_secret = _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET')
+    Calendar(client_id, client_secret, filename)
 
 
 def bundle_web():
@@ -47,6 +56,8 @@ def bundle_web():
     fab.local('go run build.go')
     version = _version()
     fab.local("sed -i -e 's/version=.*/version=\"%s\",/' setup.py" % version)
+    write_credentials('credentials.dat')
+    fab.local('cp credentials.dat stiny')
     fab.local('python setup.py sdist')
     print "Created dist/stiny-%s.tar.gz" % version
 
@@ -69,11 +80,13 @@ def bundle_door():
     fab.local('rm -rf build/worker')
     fab.local('rm -f build/worker.zip')
     fab.local('cp -rL worker build/worker')
-    constants = ['STINY_AWS_ACCESS_KEY', 'STINY_AWS_SECRET_KEY']
+    write_credentials('credentials.dat')
+    fab.local('cp credentials.dat build/worker')
+    constants = ['STINY_SERVER_GOOGLE_CLIENT_ID', 'STINY_SERVER_GOOGLE_CLIENT_SECRET']
     with open('build/worker/credentials.py', 'w') as ofile:
         for c in constants:
             ofile.write("%s = '%s'\n" % (c, _get_var(c)))
-    files = [f for f in os.listdir('build/worker') if f.endswith('.py')]
+    files = [f for f in os.listdir('build/worker') if f.split('.')[-1] in ('py', 'dat')]
     with lcd('build/worker'):
         fab.local('zip ../worker.zip %s' % (' '.join(files)))
     fab.local('rm -rf build/worker')

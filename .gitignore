@@ -16,3 +16,4 @@ prod.ini
 gen
 files.json
 credentials.py
+credentials.dat

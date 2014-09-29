@@ -22,7 +22,8 @@ VENV_NAME = 'myvirtualenv'
 DEPENDENCIES = {
     'RPi.GPIO': 'rpi.gpio',
     'bottle': 'bottle',
-    'flywheel': 'flywheel',
+    'oauth2client': 'google-api-python-client',
+    'gflags': 'python-gflags',
 }
 
 
@@ -118,17 +119,15 @@ def main():
         install_lib(args.e, name, pip_name)
 
     # Connect to Dynamodb
-    from flywheel import Engine
+    from gutil import Calendar
 
-    engine = Engine()
-    access_key = get_constant('STINY_AWS_ACCESS_KEY')
-    secret_key = get_constant('STINY_AWS_SECRET_KEY')
-    engine.connect_to_region('us-west-1', access_key=access_key,
-                             secret_key=secret_key)
+    client_id = get_constant('STINY_SERVER_GOOGLE_CLIENT_ID')
+    client_secret = get_constant('STINY_SERVER_GOOGLE_CLIENT_SECRET')
+    calendar = Calendar(client_id, client_secret)
 
     # Start the worker
     from worker import DoorWorker
-    worker = DoorWorker(engine=engine, isolate=args.debug)
+    worker = DoorWorker(calendar=calendar, isolate=args.debug)
     worker.daemon = True
     worker.start()
 

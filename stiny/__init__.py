@@ -7,7 +7,6 @@ import calendar
 import datetime
 import json
 from collections import defaultdict
-from flywheel import Engine
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
@@ -18,7 +17,7 @@ from pyramid.session import check_csrf_token
 from pyramid.settings import asbool, aslist
 from pyramid_beaker import session_factory_from_settings
 
-from .models import UserPerm, State
+from .gutil import Calendar
 
 
 def to_json(value):
@@ -128,14 +127,9 @@ def _auth_callback(userid, request):
     if setting is not None:
         principals = aslist(setting)
     else:
-        # Otherwise, check DynamoDB for perms.
-        now = datetime.datetime.utcnow()
-        permlist = request.db(UserPerm) \
-            .filter(UserPerm.start < now, email=userid).all()
-        principals = set()
-        for perm in permlist:
-            if now < perm.end:
-                principals.update(perm.perms)
+        principals = []
+        if request.cal.is_guest(userid):
+            principals.append('unlock')
     perms.extend(principals)
     return perms
 
@@ -211,20 +205,16 @@ def includeme(config):
     ))
     config.set_default_permission('default')
 
-    # Database
-    engine = Engine()
-    access_key = settings.get('aws.access_key')
-    if access_key is None:
-        access_key = os.environ['STINY_AWS_ACCESS_KEY']
-    secret_key = settings.get('aws.secret_key')
-    if secret_key is None:
-        secret_key = os.environ['STINY_AWS_SECRET_KEY']
-    engine.connect_to_region('us-west-1', access_key=access_key,
-                             secret_key=secret_key)
-    engine.register(UserPerm, State)
-    engine.create_schema()
-    config.registry.engine = engine
-    config.add_request_method(lambda r: r.registry.engine, 'db', reify=True)
+    # Calendar
+    client_id = settings.get('google.server_client_id')
+    if client_id is None:
+        client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
+    client_secret = settings.get('google.server_client_secret')
+    if client_secret is None:
+        client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
+    calendar = Calendar(client_id, client_secret)
+    config.registry.calendar = calendar
+    config.add_request_method(lambda r: r.registry.calendar, 'cal', reify=True)
 
     config.add_request_method(_call_worker, name='call_worker')
 

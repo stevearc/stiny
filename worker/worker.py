@@ -1,11 +1,8 @@
-import logging
 import time
+
+import logging
 from multiprocessing import Queue
 from threading import Thread
-
-from datetime import datetime
-
-from models import State
 
 
 LOG = logging.getLogger(__name__)
@@ -25,8 +22,8 @@ class BaseWorker(Thread):
 
     Parameters
     ----------
-    engine : :class:`~flywheel.Engine`
-        Database engine for querying application state.
+    calendar : :class:`stiny.gutil.Calendar`
+        Stiny wrapper for Google Calendar API
     in_map : dict, optional
         Mapping for names of input relays to the relay index
     out_map : dict, optional
@@ -40,7 +37,7 @@ class BaseWorker(Thread):
     """
 
     def __init__(self, *args, **kwargs):
-        self.db = kwargs.pop('engine')
+        self.cal = kwargs.pop('calendar')
         self._isolate = kwargs.pop('isolate', False)
         self._in_map = kwargs.pop('in_map', {})
         self._out_map = kwargs.pop('out_map', {})
@@ -232,15 +229,8 @@ class DoorWorker(BaseWorker):
         """
         self.do('on' if state else 'off', relay='doorbell')
         if not state:
-            now = datetime.utcnow()
-            party_mode = False
-            states = self.db(State).filter(State.start < now, name='party')
-            for party in states:
-                if now < party.end:
-                    party_mode = True
-                    break
-            if party_mode:
-                self.do('on_off', delay=4, duration=3,
+            if self.cal.is_party_time():
+                self.do('on_off', duration=3,
                         relay='outside_latch')
 
     def on_buzzer(self, state):

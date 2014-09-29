@@ -1,1 +1,0 @@
-../stiny/models.py
