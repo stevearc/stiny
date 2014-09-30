@@ -1,6 +1,7 @@
 import time
 
 import logging
+from functools import wraps
 from multiprocessing import Queue
 from threading import Thread
 
@@ -11,6 +12,16 @@ try:
     import RPi.GPIO as GPIO
 except RuntimeError:
     LOG.warn("Not running on Raspberry Pi; controls unavailable")
+
+
+def async(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        t = Thread(target=function, args=args, kwargs=kwargs)
+        t.daemon = True
+        t.start()
+        return t
+    return wrapper
 
 
 class BaseWorker(Thread):
@@ -209,6 +220,7 @@ class BaseWorker(Thread):
 class DoorWorker(BaseWorker):
 
     """ Worker for the door buzzer and doorbell relays.  """
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('out_map', {
             'doorbell': 7,
@@ -229,9 +241,13 @@ class DoorWorker(BaseWorker):
         """
         self.do('on' if state else 'off', relay='doorbell')
         if not state:
-            if self.cal.is_party_time():
-                self.do('on_off', duration=3,
-                        relay='outside_latch')
+            self._open_if_party()
+
+    @async
+    def _open_if_party(self):
+        if self.cal.is_party_time():
+            self.do('on_off', delay=4, duration=3,
+                    relay='outside_latch')
 
     def on_buzzer(self, state):
         """ Open the door when buzzer is pressed """
