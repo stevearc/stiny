@@ -14,7 +14,7 @@ set -e
 case "$1" in
   start)
         log_daemon_msg "Starting Stiny" "stiny" || true
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip -e /home/pi/stiny_env; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
@@ -32,7 +32,7 @@ case "$1" in
   restart)
         log_daemon_msg "Restarting Stiny" "stiny" || true
         start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/stiny.pid
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny.pid --exec /usr/bin/python -- /home/pi/worker.zip -e /home/pi/stiny_env; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
