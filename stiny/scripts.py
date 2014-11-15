@@ -26,8 +26,8 @@ def do_calendar():
     client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
     calendar = Calendar(client_id, client_secret)
 
-    past = timedelta(days=args.p, minutes=5)
-    future = timedelta(days=args.f, minutes=5)
+    past = timedelta(days=args.p, minutes=1)
+    future = timedelta(days=args.f)
     for event in calendar.iter_active_events(past, future):
         print '-' * 20
         pprint(event)

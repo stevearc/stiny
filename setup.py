@@ -17,6 +17,7 @@ REQUIREMENTS = [
     'pyramid_jinja2',
     'python-gflags',
     'requests',
+    'twilio',
 ]
 
 TEST_REQUIREMENTS = []
@@ -24,7 +25,7 @@ TEST_REQUIREMENTS = []
 if __name__ == "__main__":
     setup(
         name='stiny',
-        version="0.1-16-gf7c0402",
+        version="0.1-19-g26e109d",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
         classifiers=[

@@ -1,3 +1,5 @@
+import re
+
 import gflags
 import httplib2
 import pkg_resources
@@ -65,8 +67,10 @@ class Calendar(object):
         for event in events:
             yield event
 
-    def iter_active_events(self, past=timedelta(minutes=5),
-                           future=timedelta(minutes=5)):
+    def iter_active_events(self, past=timedelta(minutes=1),
+                           future=timedelta()):
+        # TODO: this does not handle all-day events because those are stored
+        # with no knowledge of any timezone.
         now = datetime.utcnow()
         return self.iter_events(now - past, now + future)
 
@@ -76,14 +80,51 @@ class Calendar(object):
                 return True
         return False
 
-    def is_guest(self, email):
-        email = email.lower()
+    def _iter_event_lines(self):
+        for event in self.iter_active_events():
+            description = event.get('description', '').strip()
+            if description:
+                for line in description.split('\n'):
+                    yield line
+
+    def _iter_event_guest_tokens(self):
+        for line in self._iter_event_lines():
+            if line.startswith('guest:'):
+                for token in line[6:].lower().split(','):
+                    yield token.strip()
+
+    def is_email_guest(self, email):
+        return email in self._iter_event_guest_tokens()
+
+    def is_phone_guest(self, number):
+        for token in self._iter_event_guest_tokens():
+            trimmed = re.sub(r'[^\d]', '', token)
+            if number == trimmed:
+                return True
+        return False
+
+    def is_guest(self, token):
+        """
+        Check if someone is a guest
+
+        Parameters
+        ----------
+        token : str
+            This can be anything, but right now we are only checking emails
+            (web interface) and phone numbers (twilio).
+
+        """
+        if token.isdigit():
+            return self.is_phone_guest(token)
+        else:
+            return self.is_email_guest(token)
+        token = token.lower()
         for event in self.iter_active_events():
             description = event['description'].split('\n')
             for line in description:
                 line = line.lower().strip()
                 if line.startswith('guest:'):
-                    guest_email = line.split(':')[1].strip()
-                    if email == guest_email:
+                    tokens = [s.strip().lower() for s in line[6:].split(',')]
+                    if token in tokens:
                         return True
         return False

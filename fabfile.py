@@ -41,6 +41,8 @@ def create_prod_config(name):
              _get_var('STINY_SERVER_GOOGLE_CLIENT_ID'))
     _set_var(name, 'google.server_client_secret',
              _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET'))
+    _set_var(name, 'twilio.auth_token',
+             _get_var('STINY_TWILIO_AUTH_TOKEN'))
 
 
 def write_credentials(filename):
@@ -71,6 +73,7 @@ def deploy_web():
     venv = "/envs/stiny"
     create_prod_config('prod.ini')
     fab.sudo("yes | %s/bin/pip uninstall stiny || true" % venv)
+    fab.sudo("%s/bin/pip install pastescript" % venv)
     fab.sudo("%s/bin/pip install %s" % (venv, tarball))
     fab.put('prod.ini', '/etc/emperor/stiny.ini', use_sudo=True)
 

@@ -1,0 +1,2 @@
+When a guest has access, email/text them to let them know.
+Handle all-day events in guest access

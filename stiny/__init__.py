@@ -1,11 +1,12 @@
 """ Stiny - A home automation assistant """
-import requests
 import os
 import posixpath
 
 import calendar
 import datetime
 import json
+import logging
+import requests
 from collections import defaultdict
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
@@ -16,8 +17,12 @@ from pyramid.renderers import JSON, render, render_to_response
 from pyramid.session import check_csrf_token
 from pyramid.settings import asbool, aslist
 from pyramid_beaker import session_factory_from_settings
+from twilio.util import RequestValidator
 
 from .gutil import Calendar
+
+
+LOG = logging.getLogger(__name__)
 
 
 def to_json(value):
@@ -59,6 +64,7 @@ def _error(request, error, message='Unknown error', status_code=400):
         'error': error,
         'msg': message,
     }
+    LOG.error("%s: %s", error, message)
     request.response.status_code = status_code
     return render_to_response('json', data, request)
 
@@ -130,8 +136,17 @@ def _auth_callback(userid, request):
         principals = []
         if request.cal.is_guest(userid):
             principals.append('unlock')
+
     perms.extend(principals)
     return perms
+
+
+def _validate_twilio(request):
+    signature = request.headers.get('X-Twilio-Signature')
+    if signature is None:
+        return False
+    validator = request.registry.twilio_validator
+    return validator.validate(request.url, {}, signature)
 
 
 def _call_worker(request, worker, command, **kwargs):
@@ -172,7 +187,8 @@ def includeme(config):
     config.add_request_method(_constants, name='client_constants')
     config.add_request_method(lambda r, *a, **k: r.route_url('root', *a, **k),
                               name='rooturl')
-    config.add_request_method(lambda r, u: _auth_callback(u, r), name='user_principals')
+    config.add_request_method(lambda r, u: _auth_callback(u, r),
+                              name='user_principals')
 
     prefix = settings.get('pike.url_prefix', 'gen').strip('/')
     config.registry.client_constants = {
@@ -215,6 +231,12 @@ def includeme(config):
     calendar = Calendar(client_id, client_secret)
     config.registry.calendar = calendar
     config.add_request_method(lambda r: r.registry.calendar, 'cal', reify=True)
+
+    twilio_token = settings.get('twilio.auth_token')
+    if twilio_token is None:
+        twilio_token = os.environ['STINY_TWILIO_AUTH_TOKEN']
+    config.registry.twilio_validator = RequestValidator(twilio_token)
+    config.add_request_method(_validate_twilio, name='validate_twilio')
 
     config.add_request_method(_call_worker, name='call_worker')
 

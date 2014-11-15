@@ -31,3 +31,5 @@ def includeme(config):
 
     config.add_route('doorbell', '/api/home/doorbell')
     config.add_route('unlock', '/api/home/unlock')
+
+    config.add_route('on_sms', '/api/home/sms')
