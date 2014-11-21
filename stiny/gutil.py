@@ -118,13 +118,3 @@ class Calendar(object):
             return self.is_phone_guest(token)
         else:
             return self.is_email_guest(token)
-        token = token.lower()
-        for event in self.iter_active_events():
-            description = event['description'].split('\n')
-            for line in description:
-                line = line.lower().strip()
-                if line.startswith('guest:'):
-                    tokens = [s.strip().lower() for s in line[6:].split(',')]
-                    if token in tokens:
-                        return True
-        return False
