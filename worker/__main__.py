@@ -1,11 +1,16 @@
+import os
+import select
+import sys
+from distutils.spawn import find_executable  # pylint: disable=E0611,F0401
+
 import argparse
 import logging
-import os
 import shutil
 import subprocess
-import sys
 import tempfile
-from distutils.spawn import find_executable  # pylint: disable=E0611,F0401
+import threading
+import tty
+
 
 LOG = None
 
@@ -89,6 +94,7 @@ LOG_LEVELS = {
     'error': logging.ERROR,
 }
 
+
 def main():
     """ Run a worker that manages a Raspberry Pi """
     global LOG
@@ -104,6 +110,8 @@ def main():
                         help="Don't send/receive signals from GPIO")
     parser.add_argument('-l', default='warn', choices=LOG_LEVELS.keys(),
                         help="Log level (default %(default)s)")
+    parser.add_argument('-i', action='store_true',
+                        help="Interactive mode")
     args = parser.parse_args()
 
     logging.basicConfig()
@@ -131,6 +139,17 @@ def main():
     worker.daemon = True
     worker.start()
 
+    if args.i:
+        web_thread = threading.Thread(target=run_webserver,
+                                      args=[worker, args.host, args.port])
+        web_thread.daemon = True
+        web_thread.start()
+        poll_user_input(worker)
+    else:
+        run_webserver(worker, args.host, args.port)
+
+
+def run_webserver(worker, host, port):
     # Set up the bottle endpoint
     from bottle import route, request, run
 
@@ -140,8 +159,32 @@ def main():
         worker.do(command, **kwargs)
         return {}
 
-    run(host=args.host, port=args.port)
+    run(host=host, port=port)
 
+
+def poll_user_input(worker):
+    tty.setcbreak(sys.stdin)
+    input_names = worker.get_inputs()
+    input_states = {name: False for name in input_names}
+    for i, name in enumerate(input_names):
+        print "%d: %s" % (i + 1, name)
+    while True:
+        key = get_keypress()
+        if key is not None:
+            if key.isdigit():
+                idx = int(key) - 1
+                if 0 <= idx < len(input_names):
+                    name = input_names[idx]
+                    input_states[name] = not input_states[name]
+                    worker.trigger_input(name, input_states[name])
+
+
+def get_keypress():
+    i, o, e = select.select([sys.stdin], [], [], 0.0001)
+    for s in i:
+        if s == sys.stdin:
+            return sys.stdin.read(1)
+    return None
 
 if __name__ == '__main__':
     main()

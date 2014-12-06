@@ -105,7 +105,7 @@ class BaseWorker(Thread):
             return False, None
         self._last_read_time[relay] = now
         state = self._get(relay)
-        changed = state != self._btn_states.get(relay)
+        changed = state != self._btn_states.setdefault(relay, False)
         self._btn_states[relay] = state
         return changed, state
 
@@ -114,16 +114,33 @@ class BaseWorker(Thread):
         for name in self._in_map:
             changed, state = self._get_input(name)
             if changed:
-                method_name = 'on_%s' % name
-                LOG.debug("Received input %s", method_name)
-                meth = getattr(self, method_name, None)
-                if meth is None:
-                    LOG.warning("Unhandled input %r", method_name)
-                    continue
-                try:
-                    meth(state)
-                except TypeError:
-                    LOG.exception("Bad arguments")
+                self.trigger_input(name, state)
+
+    def get_inputs(self):
+        return self._in_map.keys()
+
+    def trigger_input(self, name, state):
+        """
+        Trigger one of the inputs
+
+        Parameters
+        ----------
+        name : str
+            Name of the input to trigger
+        state : bool
+            On/off state of the input
+
+        """
+        method_name = 'on_%s' % name
+        LOG.debug("Received input %s", method_name)
+        meth = getattr(self, method_name, None)
+        if meth is None:
+            LOG.warning("Unhandled input %r", method_name)
+            return
+        try:
+            meth(state)
+        except TypeError:
+            LOG.exception("Bad arguments")
 
     def _process_messages(self):
         """ Process all messages in the queue. """
@@ -230,7 +247,9 @@ class DoorWorker(BaseWorker):
             'doorbell_button': 22,
             'buzzer': 23,
         })
+
         super(DoorWorker, self).__init__(*args, **kwargs)
+        self.party_delay = 4
 
     def on_doorbell_button(self, state):
         """
@@ -245,9 +264,16 @@ class DoorWorker(BaseWorker):
 
     @async
     def _open_if_party(self):
+        now = time.time()
         if self.cal.is_party_time():
-            self.do('on_off', delay=4, duration=3,
+            # Factor out the network request time from the delay
+            delta = time.time() - now
+            delay = max(0, self.party_delay - delta)
+            LOG.debug("PARTY TIME (delay %.02f)", delay)
+            self.do('on_off', delay=delay, duration=3,
                     relay='outside_latch')
+        else:
+            LOG.debug("No party")
 
     def on_buzzer(self, state):
         """ Open the door when buzzer is pressed """
