@@ -5,6 +5,7 @@ from distutils.spawn import find_executable  # pylint: disable=E0611,F0401
 
 import argparse
 import logging
+import logging.config
 import shutil
 import subprocess
 import tempfile
@@ -87,13 +88,7 @@ def get_constant(constant):
         return getattr(credentials, constant)
 
 
-LOG_LEVELS = {
-    'debug': logging.DEBUG,
-    'info': logging.INFO,
-    'warn': logging.WARN,
-    'error': logging.ERROR,
-}
-
+LOG_LEVELS = ['debug', 'info', 'warn', 'error']
 
 def main():
     """ Run a worker that manages a Raspberry Pi """
@@ -108,14 +103,45 @@ def main():
                         help="Webserver port (default %(default)d)")
     parser.add_argument('-d', '--debug', action='store_true',
                         help="Don't send/receive signals from GPIO")
-    parser.add_argument('-l', default='warn', choices=LOG_LEVELS.keys(),
+    parser.add_argument('-l', default='warn', choices=LOG_LEVELS,
                         help="Log level (default %(default)s)")
+    parser.add_argument('-f', help="Log file")
     parser.add_argument('-i', action='store_true',
                         help="Interactive mode")
     args = parser.parse_args()
 
-    logging.basicConfig()
-    logging.getLogger().setLevel(LOG_LEVELS[args.l])
+    log_config = {
+        'version': 1,
+        'formatters': {
+            'brief': {
+                'format': "%(asctime)s %(levelname)7s [%(name)s]: %(message)s",
+                'datefmt': "%Y-%m-%d %H:%M:%S",
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'brief',
+                'stream': 'ext://sys.stdout',
+            },
+            'file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'brief',
+                'filename': args.f,
+                'maxBytes': 1024 * 1024,
+                'backupCount': 3,
+            },
+        },
+        'root': {
+            'level': args.l.upper(),
+            'handlers': [
+                'console',
+            ],
+        },
+    }
+    if args.f is not None:
+        log_config['root']['handlers'].append('file')
+    logging.config.dictConfig(log_config)
 
     LOG = logging.getLogger(__name__)
 
