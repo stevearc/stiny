@@ -11,10 +11,20 @@ set -e
 
 . /lib/lsb/init-functions
 
+CMD="/usr/bin/autossh"
+PRIVATE_KEY="/home/pi/.ssh/id_rsa"
+LOCAL_PORT=8080
+REMOTE_PORT=9000
+SERVER="pi@home.stevearc.com"
+ARGS="-nNTy -i $PRIVATE_KEY -R $REMOTE_PORT:localhost:$LOCAL_PORT $SERVER"
+# Use stock autossh for now. Switch to ServerAliveInterval if it's still buggy.
+# ARGS="-M 0 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -nNTy -i $PRIVATE_KEY -R $REMOTE_PORT:localhost:$LOCAL_PORT $SERVER"
+
+
 case "$1" in
   start)
         log_daemon_msg "Starting Stiny tunnel" "stiny-tunnel" || true
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny-tunnel.pid --exec /home/pi/ssh-tunnel.sh; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny-tunnel.pid --exec $CMD -- $ARGS; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
@@ -32,7 +42,7 @@ case "$1" in
   restart)
         log_daemon_msg "Restarting Stiny" "stiny-tunnel" || true
         start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/stiny-tunnel.pid
-        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny-tunnel.pid --exec /home/pi/ssh-tunnel.sh; then
+        if start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile /var/run/stiny-tunnel.pid --exec $CMD -- $ARGS; then
             log_end_msg 0 || true
         else
             log_end_msg 1 || true
@@ -40,7 +50,7 @@ case "$1" in
         ;;
 
   status)
-        status_of_proc -p /var/run/stiny-tunnel.pid /home/pi/ssh-tunnel.sh stiny-tunnel && exit 0 || exit $?
+        status_of_proc -p /var/run/stiny-tunnel.pid $CMD stiny-tunnel && exit 0 || exit $?
         ;;
 
   *)

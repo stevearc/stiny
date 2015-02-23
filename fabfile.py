@@ -103,5 +103,5 @@ def deploy_door():
     fab.sudo("chmod +x /etc/init.d/stiny")
     fab.put("stiny-tunnel-service", "/etc/init.d/stiny-tunnel", use_sudo=True)
     fab.sudo("chmod +x /etc/init.d/stiny-tunnel")
-    fab.put("ssh-tunnel.sh")
+    fab.sudo("service stiny-tunnel restart")
     fab.sudo("service stiny restart")
