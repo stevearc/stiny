@@ -124,13 +124,6 @@ def main():
                 'formatter': 'brief',
                 'stream': 'ext://sys.stdout',
             },
-            'file': {
-                'class': 'logging.handlers.RotatingFileHandler',
-                'formatter': 'brief',
-                'filename': args.f,
-                'maxBytes': 1024 * 1024,
-                'backupCount': 3,
-            },
         },
         'root': {
             'level': args.l.upper(),
@@ -141,6 +134,13 @@ def main():
     }
     if args.f is not None:
         log_config['root']['handlers'].append('file')
+        log_config['handlers']['file'] = {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'brief',
+            'filename': args.f,
+            'maxBytes': 1024 * 1024,
+            'backupCount': 3,
+        }
     logging.config.dictConfig(log_config)
 
     LOG = logging.getLogger(__name__)
