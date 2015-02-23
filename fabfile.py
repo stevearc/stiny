@@ -99,9 +99,8 @@ def bundle_door():
 def deploy_door():
     bundle_door()
     fab.put("build/worker.zip")
-    fab.put("stiny-service", "/etc/init.d/stiny", use_sudo=True)
-    fab.sudo("chmod +x /etc/init.d/stiny")
-    fab.put("stiny-tunnel-service", "/etc/init.d/stiny-tunnel", use_sudo=True)
-    fab.sudo("chmod +x /etc/init.d/stiny-tunnel")
+    fab.put("stiny-service", "/etc/init.d/stiny", use_sudo=True, mode=744)
+    fab.put("stiny-tunnel-service", "/etc/init.d/stiny-tunnel", use_sudo=True,
+            mode=744)
     fab.sudo("service stiny-tunnel restart")
     fab.sudo("service stiny restart")
