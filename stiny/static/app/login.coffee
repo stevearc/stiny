@@ -7,30 +7,50 @@ angular.module('stiny')
   })
 ])
 
-.controller('LoginCtrl', ['$scope', '$http', '$location', 'stAuth', 'CONST',
-($scope, $http, $location, stAuth, CONST) ->
-  onLogin = (authResult) ->
-    if authResult.error == 'user_signed_out'
-      # FIXME: logout doesn't work yet
-      # stAuth.serverLogout()
-      return
-    return unless authResult.status.signed_in
+.config(['$routeProvider', 'CONST', ($routeProvider, CONST) ->
+  $routeProvider.when('/denied', {
+    templateUrl: "#{ CONST.URL_PREFIX }/app/denied.html"
+  })
+])
 
-    $http.post('/api/login', {access_token: authResult.access_token}).success((data, status, headers, config) ->
-      stAuth.setUser data.user
-      stAuth.setPermissions data.permissions
-      if $location.url() == '/login'
-        $location.url('/')
-    ).error((data, status, headers, config) ->
-      alert("Login failed!")
-    )
+.controller('LoginCtrl',
+['$scope', '$location', 'stAuth',
+($scope, $location, stAuth) ->
+  $scope.$watch ->
+    stAuth.isLoggingIn()
+  , (loggingIn) ->
+    $scope.loggingIn = loggingIn
 
-  $scope.loginParams = {
-    clientid: CONST.GOOGLE_CLIENT_ID
-    cookiepolicy: 'single_host_origin'
-    scope: 'email'
-    callback: onLogin
-  }
+  $scope.$watch ->
+    stAuth.isLoggedIn()
+  , (loggedIn) ->
+    if loggedIn
+      $location.url('/')
+])
+
+.directive('stLoginLogout', ['$http', 'stAuth', 'CONST', ($http, stAuth, CONST) ->
+  restrict: 'A'
+  template: '<button ng-if="loginParams" st-google-login="loginParams"></button>'
+  scope: {}
+  link: (scope, element, attrs) ->
+    loggingIn = false
+    onLogin = (authResult) ->
+      if authResult.error == 'user_signed_out'
+        return
+      if not authResult.status.signed_in
+        console.error authResult.error
+        return
+
+      # Prevent duplicate login attempts
+      return if stAuth.isLoggingIn()
+      stAuth.serverLogin(authResult.access_token).catch ->
+        alert("Login failed! #{ data.msg }")
+
+    scope.loginParams =
+      clientid: CONST.GOOGLE_CLIENT_ID
+      cookiepolicy: 'single_host_origin'
+      scope: 'email'
+      callback: onLogin
 ])
 
 # Directive to render the G+ login button

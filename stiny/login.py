@@ -32,9 +32,13 @@ def login(request, access_token):
     resp = requests.get('https://www.googleapis.com/plus/v1/people/me',
                         params={'access_token': access_token})
     if not resp.ok:
+        try:
+            message = resp.json()['error']['message']
+        except Exception:
+            message = "Could not retrieve email from Google"
         return request.error(
             'google_api',
-            "Could not retrieve email from Google")
+            message)
 
     data = resp.json()
 

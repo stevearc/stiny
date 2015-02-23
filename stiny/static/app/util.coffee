@@ -46,28 +46,60 @@ angular.module('stiny')
 ])
 
 # Object for handling login/credential/permissions methods
-.factory('stAuth', ['$http', '$route', '$location', '$injector',
-($http, $route, $location, $injector) -> {
+.factory('stAuth', ['$http', '$route', '$location', '$q',
+($http, $route, $location, $q) -> {
     _user: null
     _permissions: []
+    _loggingIn: false
     getUser: -> @_user
     setUser: (@_user) ->
+    isLoggedIn: -> @_user?
+    isLoggingIn: -> @_loggingIn
     setPermissions: (@_permissions) ->
+
     hasPermission: (perm) ->
+      return true if not perm?
       if 'admin' in @_permissions
         return true
+      if perm == 'login'
+        return @isLoggedIn()
       return perm in @_permissions
-    removeUser: -> @_user = null
-    # FIXME: Logout doesn't work right now
+
+    removeUser: ->
+      @setUser null
+      @setPermissions []
+
     logout: ->
       gapi.auth.signOut()
+      @serverLogout()
+
     serverLogout: ->
+      return unless @isLoggedIn()
       $http.post('/api/logout').success((data, status, headers, config) =>
         @removeUser()
         $route.reload()
       )
+
+    serverLogin: (access_token) ->
+      @_loggingIn = true
+      deferred = $q.defer()
+      $http.post('/api/login', {access_token: access_token})
+      .success((data, status, headers, config) =>
+        @setUser data.user
+        @setPermissions data.permissions
+        @_loggingIn = false
+        deferred.resolve()
+      ).error((data, status, headers, config) =>
+        @_loggingIn = false
+        deferred.reject()
+      )
+      return deferred.promise
+
     login: ->
-      $location.url('/login')
+      if @isLoggedIn()
+        $location.url('/denied')
+      else
+        $location.url('/login')
   }
 ])
 
@@ -79,18 +111,12 @@ angular.module('stiny')
     stAuth.setPermissions(CONST.PERMISSIONS)
 ])
 
-# Directive that shows an element only if the user has a permission
-.directive('stPermShow', ['stAuth', (stAuth) ->
-  restrict: 'A'
-  replace: true
-  link: (scope, element, attrs) ->
-    perm = attrs.stPermShow
-    scope.$watch(->
-      stAuth.hasPermission(perm)
-    (hasPerm) ->
-      if hasPerm
-        element.removeClass('hide')
-      else
-        element.addClass('hide')
-    )
+# Check permissions on every route change
+.run(['$rootScope', 'stAuth', ($rootScope, stAuth) ->
+  $rootScope.$on '$routeChangeStart', (event, newRoute, oldRoute) ->
+    if not stAuth.hasPermission newRoute.permission
+      stAuth.login()
+
+  $rootScope.hasPerm = (perm) ->
+    return stAuth.hasPermission perm
 ])

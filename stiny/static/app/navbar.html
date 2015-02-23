@@ -1,20 +1,14 @@
 <div class="row">
-  <!-- <div class="logout" ng-show="loggedIn"> -->
-  <!--   <a href="" ng-click="logout()">log out</a> -->
-  <!-- </div> -->
+  <div class="logout" ng-show="hasPerm('login')">
+    <a href="" ng-click="logout()">log out</a>
+  </div>
   <div class="col-xs-12 vspace10 text-center">
     <ul class="list-inline st-nav">
-      <li>
+      <li ng-show="hasPerm('unlock')">
         <a href="#/">
           <i class="fa fa-home fa-5x"></i>
         </a>
       </li>
-      <!-- <li> -->
-      <!--   <a href="#/projector"> -->
-      <!--     <i class="fa fa-film fa-5x"></i> -->
-      <!--   </a> -->
-      <!-- </li> -->
     </ul>
   </div>
-
 </div>

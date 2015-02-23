@@ -61,13 +61,14 @@ def bundle_web():
     write_credentials('credentials.dat')
     fab.local('cp credentials.dat stiny')
     fab.local('python setup.py sdist')
+    fab.local("sed -i -e 's/version=.*/version=\"develop\",/' setup.py")
     print "Created dist/stiny-%s.tar.gz" % version
+    return version
 
 
 @roles('nimbus')
 def deploy_web():
-    bundle_web()
-    version = _version()
+    version = bundle_web()
     tarball = "stiny-%s.tar.gz" % version
     fab.put("dist/" + tarball)
     venv = "/envs/stiny"

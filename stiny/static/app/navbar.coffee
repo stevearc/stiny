@@ -12,10 +12,4 @@ angular.module('stiny')
 ($scope, $location, stAuth, CONST) ->
   $scope.logout = ->
     stAuth.logout()
-
-  $scope.$watch(->
-    stAuth.getUser()
-  , (user) ->
-    $scope.loggedIn = user?
-  )
 ])
