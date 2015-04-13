@@ -2,6 +2,7 @@ import re
 
 import gflags
 import httplib2
+import logging
 import pkg_resources
 from apiclient.discovery import build
 from datetime import datetime, timedelta
@@ -10,10 +11,13 @@ from oauth2client.file import Storage as BaseStorage
 from oauth2client.tools import run
 
 
+LOG = logging.getLogger(__name__)
 FLAGS = gflags.FLAGS
 
 # EMS calendar id
 CAL_ID = 'klpl9hfdirojidnukjkbpbq50c@group.calendar.google.com'
+
+REFRESH_MINS = timedelta(minutes=15)
 
 
 def dump_dt(dt):
@@ -50,16 +54,26 @@ class Calendar(object):
 
         FLAGS.auth_local_webserver = False
         storage = Storage(credential_file)
-        credentials = storage.get()
-        if credentials is None or credentials.invalid:
-            credentials = run(FLOW, storage)
+        self.credentials = storage.get()
+        if self.credentials is None or self.credentials.invalid:
+            self.credentials = run(FLOW, storage)
 
         http = httplib2.Http()
-        http = credentials.authorize(http)
-        self._service = build(serviceName='calendar', version='v3', http=http)
+        self.http = self.credentials.authorize(http)
+        self._service = build(serviceName='calendar', version='v3', http=self.http)
+
+    def _refresh_credentials_if_needed(self):
+        if self.credentials.token_expiry - datetime.utcnow() < REFRESH_MINS:
+            LOG.info("Refreshing OAUTH2 credentials")
+            self.credentials.refresh(self.http)
+
+    @property
+    def service(self):
+        self._refresh_credentials_if_needed()
+        return self._service
 
     def iter_events(self, start=None, end=None):
-        events = self._service.events()
+        events = self.service.events()
         req = events.list(calendarId=CAL_ID, timeMin=dump_dt(start),
                           timeMax=dump_dt(end))
         response = req.execute()
