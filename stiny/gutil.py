@@ -128,6 +128,9 @@ class Calendar(object):
             (web interface) and phone numbers (twilio).
 
         """
+        # Trim off the country code for phone numbers
+        if token.startswith('+1'):
+            token = token[2:]
         if token.isdigit():
             return self.is_phone_guest(token)
         else:
