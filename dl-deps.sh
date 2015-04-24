@@ -36,7 +36,7 @@ main() {
         rm v3.1.1.zip
         find bootstrap-3.1.1 -mindepth 1 -maxdepth 1 \( -not -name "fonts" -and -not -name "less" \) | xargs rm -r
     fi
-    local fa_version=4.2.0
+    local fa_version=4.3.0
     if [ ! -e font-awesome-$fa_version ]; then
         dl http://fontawesome.io/assets/font-awesome-$fa_version.zip
         unzip font-awesome-$fa_version.zip

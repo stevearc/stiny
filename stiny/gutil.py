@@ -1,18 +1,18 @@
+""" Google Calendar utility """
 import re
 
-import gflags
+import argparse
 import httplib2
 import logging
 import pkg_resources
-from apiclient.discovery import build
+from apiclient.discovery import build  # pylint: disable=F0401
 from datetime import datetime, timedelta
 from oauth2client.client import OAuth2WebServerFlow, Credentials
 from oauth2client.file import Storage as BaseStorage
-from oauth2client.tools import run
+from oauth2client.tools import run_flow, argparser
 
 
 LOG = logging.getLogger(__name__)
-FLAGS = gflags.FLAGS
 
 # EMS calendar id
 CAL_ID = 'klpl9hfdirojidnukjkbpbq50c@group.calendar.google.com'
@@ -21,12 +21,14 @@ REFRESH_MINS = timedelta(minutes=15)
 
 
 def dump_dt(dt):
+    """ Dump a naive datetime to UTC format """
     if dt is None:
         return None
     return dt.isoformat('T') + 'Z'
 
 
 class Storage(BaseStorage):
+    """ Credential storage that can load from a python package resource. """
 
     def locked_get(self):
         credentials = None
@@ -39,40 +41,50 @@ class Storage(BaseStorage):
 
 
 class Calendar(object):
+    """ Google Calendar API wrapper class """
 
     def __init__(
             self,
             client_id,
             client_secret,
-            credential_file='credentials.dat'):
-        FLOW = OAuth2WebServerFlow(
+            credential_file='credentials.dat',
+            flags=None):
+        flow = OAuth2WebServerFlow(
             client_id,
             client_secret,
             scope='https://www.googleapis.com/auth/calendar.readonly',
             redirect_uri='urn:ietf:wg:oauth:2.0:oob',
             user_agent='stiny/0.1')
+        if flags is None:
+            parser = argparse.ArgumentParser(parents=[argparser])
+            flags = parser.parse_args([])
 
-        FLAGS.auth_local_webserver = False
         storage = Storage(credential_file)
         self.credentials = storage.get()
         if self.credentials is None or self.credentials.invalid:
-            self.credentials = run(FLOW, storage)
+            self.credentials = run_flow(flow, storage, flags)
 
         http = httplib2.Http()
         self.http = self.credentials.authorize(http)
-        self._service = build(serviceName='calendar', version='v3', http=self.http)
+        self._service = build(
+            serviceName='calendar',
+            version='v3',
+            http=self.http)
 
     def _refresh_credentials_if_needed(self):
+        """ If credentials will expire soon, force a refresh """
         if self.credentials.token_expiry - datetime.utcnow() < REFRESH_MINS:
             LOG.info("Refreshing OAUTH2 credentials")
             self.credentials.refresh(self.http)
 
     @property
     def service(self):
+        """ Convenience property for Calendar service that refreshes tokens """
         self._refresh_credentials_if_needed()
         return self._service
 
     def iter_events(self, start=None, end=None):
+        """ Generator that iterates over all Calendar events in a range """
         events = self.service.events()
         req = events.list(calendarId=CAL_ID, timeMin=dump_dt(start),
                           timeMax=dump_dt(end))
@@ -83,18 +95,21 @@ class Calendar(object):
 
     def iter_active_events(self, past=timedelta(minutes=1),
                            future=timedelta()):
+        """ Generator that iterates over all active calendar events """
         # TODO: this does not handle all-day events because those are stored
         # with no knowledge of any timezone.
         now = datetime.utcnow()
         return self.iter_events(now - past, now + future)
 
     def is_party_time(self):
+        """ Check if there is an active party event """
         for event in self.iter_active_events():
             if 'party' in event['summary'].lower():
                 return True
         return False
 
     def _iter_event_lines(self):
+        """ Iterate over all lines in the description of an event """
         for event in self.iter_active_events():
             description = event.get('description', '').strip()
             if description:
@@ -102,15 +117,18 @@ class Calendar(object):
                     yield line
 
     def _iter_event_guest_tokens(self):
+        """ Iterate over all comma-separated values in all 'guest:' lines """
         for line in self._iter_event_lines():
             if line.startswith('guest:'):
                 for token in line[6:].lower().split(','):
                     yield token.strip()
 
     def is_email_guest(self, email):
+        """ Check if an email address has guest permissions """
         return email in self._iter_event_guest_tokens()
 
     def is_phone_guest(self, number):
+        """ Check if a phone number has guest permissions """
         for token in self._iter_event_guest_tokens():
             trimmed = re.sub(r'[^\d]', '', token)
             if number == trimmed:

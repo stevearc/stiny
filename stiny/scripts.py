@@ -1,15 +1,32 @@
+""" Command line scripts """
 import os
 
 import argparse
 from datetime import timedelta
+from oauth2client.tools import argparser
 from pprint import pprint
 
 from .gutil import Calendar
 
 
+def save_credentials():
+    """ Make sure the Google Calendar credentials are saved out to a file """
+    parser = argparse.ArgumentParser(
+        description=do_calendar.__doc__,
+        parents=[argparser],
+    )
+    args = parser.parse_args()
+    client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
+    client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
+    Calendar(client_id, client_secret, flags=args)
+
+
 def do_calendar():
     """ List calendar events for debugging purposes """
-    parser = argparse.ArgumentParser(description=do_calendar.__doc__)
+    parser = argparse.ArgumentParser(
+        description=do_calendar.__doc__,
+        parents=[argparser],
+    )
     parser.add_argument(
         '-p',
         type=int,

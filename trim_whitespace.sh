@@ -9,7 +9,7 @@ trim() {
 }
 
 main() {
-    local files=$(find round_robin -name gen -prune -o \
+    local files=$(find stiny -name gen -prune -o \
         \( -name "*.py" -or -name "*.js" -or -name "*.html" -or -name "*.coffee" -or -name "*.less" -or -name "*.jinja2" \) \
         -type f -print)
 

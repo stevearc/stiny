@@ -38,18 +38,14 @@ client-side application code is in ``stiny/static/app``.
 
 Local Development
 -----------------
-First you need to download all the javascript/css libraries that we're using.
-There's a handy script that will do just that:
-
-``./dl-deps.sh``
-
-Then you need to `install Go <https://golang.org/doc/install>`_. We're using an asset
+First you need to `install Go <https://golang.org/doc/install>`_. We're using an asset
 pipeline that I wrote in Go to compile coffeescript and less, and to bundle
 everything.
 
-After you have Go, you need to install the asset pipeline:
+Then you need to download all the javascript/css libraries that we're using.
+There's a handy script that will do just that:
 
-``go get github.com/stevearc/pike``
+``./dl-deps.sh``
 
 Now create a virtualenv and install stiny:
 
@@ -60,18 +56,21 @@ Now create a virtualenv and install stiny:
     $ pip install -r requirements_dev.txt
     $ pip install -e .
 
+You will need certain secret tokens for accessing certain APIs (GCal, Twilio,
+etc). They will be read out of environment variables. I put them inside the
+google doc on door wiring. You should put them into your bashrc or similar.
+
+Activate the virtualenv and run ``stiny-setup``. This will create the
+``credentials.dat`` file which will allow stiny to access the Google Calendar.
+
 Everything should be working! You can run the server with ``pserve --reload
 development.ini``, and the asset pipeline with ``go run build.go -w``. For
 convenience I have bundled both of those commands into the script
 ``./serve_forever.sh``
 
-To run the worker code, just do ``python worker/``.
+To run the worker code, just do ``python worker/ --debug -l debug -i``.
 
 Deploy
 ------
-You will need certain secret tokens to deploy. During the deploy process they
-are read out of environment variables. I put them inside the google doc on door
-wiring. You should put them into your bashrc or similar.
-
 We're using fabric to deploy. Do ``fab help`` to get a list of commands. You
 will probably only ever need ``fab deploy_web`` and ``fab deploy_door``.

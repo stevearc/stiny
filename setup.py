@@ -51,6 +51,7 @@ if __name__ == "__main__":
             ],
             'console_scripts': [
                 'stiny-calendar = stiny.scripts:do_calendar',
+                'stiny-setup = stiny.scripts:save_credentials',
             ],
         },
         install_requires=REQUIREMENTS,
