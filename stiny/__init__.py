@@ -190,6 +190,8 @@ def includeme(config):
     config.add_request_method(lambda r, u: _auth_callback(u, r),
                               name='user_principals')
 
+    config.registry.phone_access = aslist(settings.get('phone_access', []))
+
     prefix = settings.get('pike.url_prefix', 'gen').strip('/')
     config.registry.client_constants = {
         'URL_PREFIX': '/' + prefix,
@@ -228,8 +230,8 @@ def includeme(config):
     client_secret = settings.get('google.server_client_secret')
     if client_secret is None:
         client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
-    calendar = Calendar(client_id, client_secret)
-    config.registry.calendar = calendar
+    cal = Calendar(client_id, client_secret)
+    config.registry.calendar = cal
     config.add_request_method(lambda r: r.registry.calendar, 'cal', reify=True)
 
     twilio_token = settings.get('twilio.auth_token')

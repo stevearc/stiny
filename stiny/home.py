@@ -27,8 +27,9 @@ def received_sms(request):
     if not request.validate_twilio():
         return request.error('auth', "Failed HMAC")
     from_number = request.param('From')
-    if not request.cal.is_guest(from_number):
-        LOG.warning("%r attempted unauthorized entry" % from_number)
+    if not request.cal.is_guest(from_number) and \
+            from_number not in request.registry.phone_access:
+        LOG.warning("%r attempted unauthorized entry", from_number)
         return ("I'm sorry, you are not authorized to enter this dwelling. "
                 "Please contact the residents.")
     request.call_worker('door', 'on_off', relay='outside_latch', duration=3)

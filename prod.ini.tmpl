@@ -11,21 +11,27 @@ pyramid.default_locale_name = en
 
 
 # For beaker
-session.encrypt_key = replaceme
-session.validate_key = replaceme
+session.encrypt_key = {{ session.encrypt_key }}
+session.validate_key = {{ session.validate_key }}
 session.secure = true
 
-authtkt.secret = replaceme
+authtkt.secret = {{ authtkt.secret }}
 
-pike.url_prefix = URL_PREFIX
+pike.url_prefix = {{ url_prefix }}
 
 worker.door = http://localhost:9000
 
-google.client_id = 403790963196-mmg0f7lir89a8olv6jn6oa1mhq5v4h3d.apps.googleusercontent.com
-google.server_client_id = replaceme
-google.server_client_secret = replaceme
+google.client_id = {{ google.client_id }}
+google.server_client_id = {{ google.server_client_id }}
+google.server_client_secret = {{ google.server_client_secret }}
 
-twilio.auth_token = replaceme
+twilio.auth_token = {{ twilio.auth_token }}
+
+{% for admin in admins -%}
+auth.{{ admin }} = admin
+{% endfor %}
+
+phone_access = {{ phone_access }}
 
 auth.arcangeli07@gmail.com = admin
 auth.mason@masonglidden.com = admin

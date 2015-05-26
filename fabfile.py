@@ -1,7 +1,9 @@
 import os
+from pyramid.settings import aslist
+import jinja2
 
 import fabric.api as fab
-from fabric.context_managers import lcd
+from fabric.context_managers import lcd, path
 from fabric.decorators import roles
 
 
@@ -15,41 +17,59 @@ def _version():
     return fab.local('git describe --tags', capture=True)
 
 
+def _get_ref():
+    ref = fab.local('git rev-parse HEAD', capture=True)
+    return ref[:8]
+
+
 def _get_var(key):
     if key not in os.environ:
         raise Exception("Missing environment variable %r" % key)
     return os.environ[key]
 
+CONSTANTS = {
+    'venv': '/envs/stiny',
+    'admins': aslist(_get_var('STINY_ADMINS')),
+    'phone_access': _get_var('STINY_PHONE_ACCESS'),
+    'url_prefix': _get_ref(),
+    'session': {
+        'encrypt_key': _get_var('STINY_ENCRYPT_KEY'),
+        'validate_key': _get_var('STINY_VALIDATE_KEY'),
+    },
+    'authtkt': {
+        'secret': _get_var('STINY_AUTH_SECRET'),
+    },
+    'google': {
+        'client_id': _get_var('STINY_GOOGLE_CLIENT_ID'),
+        'server_client_id': _get_var('STINY_SERVER_GOOGLE_CLIENT_ID'),
+        'server_client_secret': _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET'),
+    },
+    'twilio': {
+        'auth_token': _get_var('STINY_TWILIO_AUTH_TOKEN'),
+    }
+}
 
-def _set_var(filename, name, value):
-    fab.local("sed -i -e 's/%s.*/%s = %s/' %s" %
-              (name, name, value.replace('/', '\\/'), filename))
+
+def _render(filename, **context):
+    with open(filename, 'r') as ifile:
+        tmpl = jinja2.Template(ifile.read())
+    basename = os.path.basename(filename)
+    fab.local('mkdir -p dist')
+    outfile = os.path.join('dist', basename)
+    with open(outfile, 'w') as ofile:
+        ofile.write(tmpl.render(**context))
+    return outfile
 
 
-def create_prod_config(name):
-    fab.local('cp prod.ini.tmpl %s' % name)
-
-    ref = fab.local('git rev-parse --verify HEAD', capture=True)
-    fab.local("sed -i -e 's/URL_PREFIX/gen\\/%s/' %s" % (ref[:8], name))
-    _set_var(name, 'session.encrypt_key', _get_var('STINY_ENCRYPT_KEY'))
-    _set_var(name, 'session.validate_key',
-             _get_var('STINY_VALIDATE_KEY'))
-    _set_var(name, 'authtkt.secret', _get_var('STINY_AUTH_SECRET'))
-    _set_var(name, 'google.client_id',
-             _get_var('STINY_GOOGLE_CLIENT_ID'))
-    _set_var(name, 'google.server_client_id',
-             _get_var('STINY_SERVER_GOOGLE_CLIENT_ID'))
-    _set_var(name, 'google.server_client_secret',
-             _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET'))
-    _set_var(name, 'twilio.auth_token',
-             _get_var('STINY_TWILIO_AUTH_TOKEN'))
+def _render_put(filename, dest, **kwargs):
+    rendered = _render(filename, **CONSTANTS)
+    fab.put(rendered, dest, **kwargs)
 
 
 def write_credentials(filename):
     from stiny.gutil import Calendar
-    client_id = _get_var('STINY_SERVER_GOOGLE_CLIENT_ID')
-    client_secret = _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET')
-    Calendar(client_id, client_secret, filename)
+    google = CONSTANTS['google']
+    Calendar(google['server_client_id'], google['server_client_secret'], filename)
 
 
 def bundle_web():
@@ -62,6 +82,7 @@ def bundle_web():
     fab.local('cp credentials.dat stiny')
     fab.local('python setup.py sdist')
     fab.local("sed -i -e 's/version=.*/version=\"develop\",/' setup.py")
+    _render('prod.ini.tmpl', **CONSTANTS)
     print "Created dist/stiny-%s.tar.gz" % version
     return version
 
@@ -71,12 +92,11 @@ def deploy_web():
     version = bundle_web()
     tarball = "stiny-%s.tar.gz" % version
     fab.put("dist/" + tarball)
-    venv = "/envs/stiny"
-    create_prod_config('prod.ini')
-    fab.sudo("yes | %s/bin/pip uninstall stiny || true" % venv)
-    fab.sudo("%s/bin/pip install pastescript" % venv)
-    fab.sudo("%s/bin/pip install %s" % (venv, tarball))
-    fab.put('prod.ini', '/etc/emperor/stiny.ini', use_sudo=True)
+    with path(CONSTANTS['venv'] + '/bin', behavior='prepend'):
+        fab.sudo("yes | pip uninstall stiny || true")
+        fab.sudo("pip install pastescript")
+        fab.sudo("pip install %s" % tarball)
+    _render_put('prod.ini.tmpl', '/etc/emperor/stiny.ini', use_sudo=True)
 
 
 def bundle_door():
