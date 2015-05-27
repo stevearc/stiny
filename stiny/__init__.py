@@ -181,6 +181,11 @@ def includeme(config):
     settings.setdefault('session.httponly', 'true')
     config.set_session_factory(session_factory_from_settings(settings))
 
+    # Set admins from environment variable for local development
+    if 'STINY_ADMINS' in os.environ:
+        for admin in aslist(os.environ['STINY_ADMINS']):
+            settings['auth.' + admin] = 'admin'
+
     # Special request methods
     config.add_request_method(_error, name='error')
     config.add_request_method(_raise_error, name='raise_error')
@@ -224,13 +229,15 @@ def includeme(config):
     config.set_default_permission('default')
 
     # Calendar
-    client_id = settings.get('google.server_client_id')
-    if client_id is None:
-        client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
+    settings.setdefault('google.client_id',
+                        os.environ.get('STINY_GOOGLE_CLIENT_ID'))
+    server_client_id = settings.get('google.server_client_id')
+    if server_client_id is None:
+        server_client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
     client_secret = settings.get('google.server_client_secret')
     if client_secret is None:
         client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
-    cal = Calendar(client_id, client_secret)
+    cal = Calendar(server_client_id, client_secret)
     config.registry.calendar = cal
     config.add_request_method(lambda r: r.registry.calendar, 'cal', reify=True)
 
