@@ -73,7 +73,7 @@ func css(debug bool) []*pike.Graph {
 		libcss = pike.Glob("stiny/static", "lib/*.min.css")
 	}
 
-	p = pike.Glob("stiny/static", "lib/*.otf", "lib/*.eot", "lib/*.svg", "lib/*.ttf", "lib/*.woff")
+	p = pike.Glob("stiny/static", "lib/*.otf", "lib/*.eot", "lib/*.svg", "lib/*.ttf", "lib/*.woff", "lib/*.woff2")
 	if debug {
 		p = p.Pipe(pike.ChangeFilter())
 	} else {

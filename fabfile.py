@@ -31,7 +31,7 @@ CONSTANTS = {
     'venv': '/envs/stiny',
     'admins': aslist(_get_var('STINY_ADMINS')),
     'phone_access': _get_var('STINY_PHONE_ACCESS'),
-    'url_prefix': _get_ref(),
+    'url_prefix': 'gen/' + _get_ref(),
     'session': {
         'encrypt_key': _get_var('STINY_ENCRYPT_KEY'),
         'validate_key': _get_var('STINY_VALIDATE_KEY'),
