@@ -43,6 +43,7 @@ CONSTANTS = {
         'client_id': _get_var('STINY_GOOGLE_CLIENT_ID'),
         'server_client_id': _get_var('STINY_SERVER_GOOGLE_CLIENT_ID'),
         'server_client_secret': _get_var('STINY_SERVER_GOOGLE_CLIENT_SECRET'),
+        'calendar_id': _get_var('STINY_CAL_ID'),
     },
     'twilio': {
         'auth_token': _get_var('STINY_TWILIO_AUTH_TOKEN'),
@@ -69,7 +70,8 @@ def _render_put(filename, dest, **kwargs):
 def write_credentials(filename):
     from stiny.gutil import Calendar
     google = CONSTANTS['google']
-    Calendar(google['server_client_id'], google['server_client_secret'], filename)
+    cal = Calendar(google['server_client_id'], google['server_client_secret'],
+                   filename, calendar_id=google['calendar_id'])
     cal.login_if_needed()
 
 
@@ -107,7 +109,8 @@ def bundle_door():
     fab.local('cp -rL worker build/worker')
     write_credentials('credentials.dat')
     fab.local('cp credentials.dat build/worker')
-    constants = ['STINY_SERVER_GOOGLE_CLIENT_ID', 'STINY_SERVER_GOOGLE_CLIENT_SECRET']
+    constants = ['STINY_SERVER_GOOGLE_CLIENT_ID',
+                 'STINY_SERVER_GOOGLE_CLIENT_SECRET', 'STINY_CAL_ID']
     with open('build/worker/credentials.py', 'w') as ofile:
         for c in constants:
             ofile.write("%s = '%s'\n" % (c, _get_var(c)))

@@ -15,9 +15,6 @@ from oauth2client.tools import run_flow, argparser
 
 LOG = logging.getLogger(__name__)
 
-# EMS calendar id
-CAL_ID = 'klpl9hfdirojidnukjkbpbq50c@group.calendar.google.com'
-
 REFRESH_MINS = timedelta(minutes=15)
 
 
@@ -49,7 +46,9 @@ class Calendar(object):
             client_id,
             client_secret,
             credential_file='credentials.dat',
-            flags=None):
+            flags=None,
+            calendar_id=None):
+        self.calendar_id = calendar_id
         if flags is None:
             parser = argparse.ArgumentParser(parents=[argparser])
             flags = parser.parse_args([])
@@ -110,7 +109,7 @@ class Calendar(object):
     def iter_events(self, start=None, end=None):
         """ Generator that iterates over all Calendar events in a range """
         events = self.service.events()
-        req = events.list(calendarId=CAL_ID, timeMin=dump_dt(start),
+        req = events.list(calendarId=self.calendar_id, timeMin=dump_dt(start),
                           timeMax=dump_dt(end))
         response = req.execute()
         events = response['items']

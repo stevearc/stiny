@@ -237,7 +237,10 @@ def includeme(config):
     client_secret = settings.get('google.server_client_secret')
     if client_secret is None:
         client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
-    cal = Calendar(server_client_id, client_secret)
+    cal_id = settings.get('google.calendar_id')
+    if cal_id is None:
+        cal_id = os.environ['STINY_CAL_ID']
+    cal = Calendar(server_client_id, client_secret, calendar_id=cal_id)
     config.registry.calendar = cal
     config.add_request_method(lambda r: r.registry.calendar, 'cal', reify=True)
 

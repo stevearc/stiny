@@ -156,7 +156,9 @@ def main():
 
     client_id = get_constant('STINY_SERVER_GOOGLE_CLIENT_ID')
     client_secret = get_constant('STINY_SERVER_GOOGLE_CLIENT_SECRET')
-    calendar = Calendar(client_id, client_secret)
+    client_secret = get_constant('STINY_SERVER_GOOGLE_CLIENT_SECRET')
+    calendar_id = get_constant('STINY_CAL_ID')
+    calendar = Calendar(client_id, client_secret, calendar_id=calendar_id)
 
     # Start the worker
     from worker import DoorWorker
