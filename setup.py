@@ -15,7 +15,6 @@ REQUIREMENTS = [
     'pyramid_beaker',
     'pyramid_duh>=0.1.2',
     'pyramid_jinja2',
-    'python-gflags',
     'requests',
     'twilio',
 ]

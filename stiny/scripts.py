@@ -18,7 +18,8 @@ def save_credentials():
     args = parser.parse_args()
     client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
     client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']
-    Calendar(client_id, client_secret, flags=args)
+    cal = Calendar(client_id, client_secret, flags=args)
+    cal.login_if_needed()
 
 
 def do_calendar():

@@ -7,7 +7,8 @@ import logging
 import pkg_resources
 from apiclient.discovery import build  # pylint: disable=F0401
 from datetime import datetime, timedelta
-from oauth2client.client import OAuth2WebServerFlow, Credentials
+from oauth2client.client import (OAuth2WebServerFlow, Credentials,
+                                 AccessTokenCredentialsError)
 from oauth2client.file import Storage as BaseStorage
 from oauth2client.tools import run_flow, argparser
 
@@ -49,38 +50,61 @@ class Calendar(object):
             client_secret,
             credential_file='credentials.dat',
             flags=None):
-        flow = OAuth2WebServerFlow(
-            client_id,
-            client_secret,
-            scope='https://www.googleapis.com/auth/calendar.readonly',
-            redirect_uri='urn:ietf:wg:oauth:2.0:oob',
-            user_agent='stiny/0.1')
         if flags is None:
             parser = argparse.ArgumentParser(parents=[argparser])
             flags = parser.parse_args([])
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._flags = flags
 
-        storage = Storage(credential_file)
-        self.credentials = storage.get()
-        if self.credentials is None or self.credentials.invalid:
-            self.credentials = run_flow(flow, storage, flags)
+        self._storage = Storage(credential_file)
+        self.credentials = self._storage.get()
+        self._http = None
+        self._service = None
 
-        http = httplib2.Http()
-        self.http = self.credentials.authorize(http)
-        self._service = build(
-            serviceName='calendar',
-            version='v3',
-            http=self.http)
+    def login_if_needed(self):
+        """ If API credentials not found in storage, do web login """
+        if not self.is_credentials_valid:
+            flow = OAuth2WebServerFlow(
+                self._client_id,
+                self._client_secret,
+                scope='https://www.googleapis.com/auth/calendar.readonly',
+                redirect_uri='urn:ietf:wg:oauth:2.0:oob',
+                user_agent='stiny/0.1')
+            self.credentials = run_flow(flow, self._storage, self._flags)
 
     def _refresh_credentials_if_needed(self):
         """ If credentials will expire soon, force a refresh """
+        if not self.is_credentials_valid:
+            raise AccessTokenCredentialsError("Invalid google credentials")
         if self.credentials.token_expiry - datetime.utcnow() < REFRESH_MINS:
             LOG.info("Refreshing OAUTH2 credentials")
             self.credentials.refresh(self.http)
 
     @property
+    def is_credentials_valid(self):
+        """ True if the oauth credentials are valid """
+        return self.credentials is not None and not self.credentials.invalid
+
+    @property
+    def http(self):
+        """ Accessor for authorized http object """
+        if self._http is None:
+            if not self.is_credentials_valid:
+                raise AccessTokenCredentialsError("Invalid google credentials")
+            http = httplib2.Http()
+            self._http = self.credentials.authorize(http)
+        return self._http
+
+    @property
     def service(self):
         """ Convenience property for Calendar service that refreshes tokens """
         self._refresh_credentials_if_needed()
+        if self._service is None:
+            self._service = build(
+                serviceName='calendar',
+                version='v3',
+                http=self.http)
         return self._service
 
     def iter_events(self, start=None, end=None):

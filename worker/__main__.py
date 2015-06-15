@@ -21,7 +21,7 @@ try:
 except ImportError:
     from urllib.request import urlretrieve  # pylint: disable=E0611,F0401
 
-VENV_VERSION = '1.11.6'
+VENV_VERSION = '13.0.3'
 VENV_URL = ("https://pypi.python.org/packages/source/v/"
             "virtualenv/virtualenv-%s.tar.gz" % VENV_VERSION)
 VENV_NAME = 'myvirtualenv'
@@ -29,7 +29,6 @@ DEPENDENCIES = {
     'RPi.GPIO': 'rpi.gpio',
     'bottle': 'bottle',
     'oauth2client': 'google-api-python-client',
-    'gflags': 'python-gflags',
 }
 
 

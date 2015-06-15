@@ -70,6 +70,7 @@ def write_credentials(filename):
     from stiny.gutil import Calendar
     google = CONSTANTS['google']
     Calendar(google['server_client_id'], google['server_client_secret'], filename)
+    cal.login_if_needed()
 
 
 def bundle_web():
