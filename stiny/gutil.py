@@ -131,20 +131,30 @@ class Calendar(object):
                 return True
         return False
 
-    def _iter_event_lines(self):
-        """ Iterate over all lines in the description of an event """
-        for event in self.iter_active_events():
-            description = event.get('description', '').strip()
-            if description:
-                for line in description.split('\n'):
-                    yield line
+    def _iter_tokens_from_description(self, event):
+        description = event.get('description', '').strip()
+        if description:
+            for line in description.split('\n'):
+                if not line.startswith('guest:'):
+                    continue
+                tokens = line[len('guest:'):]
+                for token in tokens.lower().split(','):
+                    yield token.strip()
+
+    def _iter_tokens_from_attendees(self, event):
+        attendees = event.get('attendees', [])
+        for person in attendees:
+            email = person.get('email')
+            if email:
+                yield email
 
     def _iter_event_guest_tokens(self):
         """ Iterate over all comma-separated values in all 'guest:' lines """
-        for line in self._iter_event_lines():
-            if line.startswith('guest:'):
-                for token in line[6:].lower().split(','):
-                    yield token.strip()
+        for event in self.iter_active_events():
+            for token in self._iter_tokens_from_description(event):
+                yield token
+            for token in self._iter_tokens_from_attendees(event):
+                yield token
 
     def is_email_guest(self, email):
         """ Check if an email address has guest permissions """

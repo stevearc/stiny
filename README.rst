@@ -9,7 +9,8 @@ have some weirdness due to PST vs UTC timezones.
 
 Adding a Guest
 ^^^^^^^^^^^^^^
-To add a guest, create any event on the calendar. In the description, put the following:
+To add a guest, create any event on the calendar. You can either invite the
+guest to the event, or put the following in the description:
 
 ``guest: guestemail@addr.com, (555) 555-5555``
 
