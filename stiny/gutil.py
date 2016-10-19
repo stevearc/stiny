@@ -25,6 +25,15 @@ def dump_dt(dt):
     return dt.isoformat('T') + 'Z'
 
 
+def normalize_email(email):
+    """ Normalize an email address for comparison """
+    # Trim off any +garbage
+    email = re.sub(r'\+[^@]*@', '@', email)
+    # Remove all periods
+    email = email.translate(None, '.')
+    return email.lower()
+
+
 class Storage(BaseStorage):
     """ Credential storage that can load from a python package resource. """
 
@@ -132,16 +141,18 @@ class Calendar(object):
         return False
 
     def _iter_tokens_from_description(self, event):
+        """ Iterate over all guest tokens parsed from the event description """
         description = event.get('description', '').strip()
         if description:
             for line in description.split('\n'):
                 if not line.startswith('guest:'):
                     continue
                 tokens = line[len('guest:'):]
-                for token in tokens.lower().split(','):
+                for token in tokens.split(','):
                     yield token.strip()
 
     def _iter_tokens_from_attendees(self, event):
+        """ Iterate over all guest tokens parsed from the event attendees """
         attendees = event.get('attendees', [])
         for person in attendees:
             email = person.get('email')
@@ -158,7 +169,11 @@ class Calendar(object):
 
     def is_email_guest(self, email):
         """ Check if an email address has guest permissions """
-        return email in self._iter_event_guest_tokens()
+        n_email = normalize_email(email)
+        for token in self._iter_event_guest_tokens():
+            if n_email == normalize_email(token):
+                return True
+        return False
 
     def is_phone_guest(self, number):
         """ Check if a phone number has guest permissions """
