@@ -1,3 +1,4 @@
+// @flow
 import fetch from 'isomorphic-fetch'
 import {doFetch} from './util.js'
 import {
@@ -10,21 +11,31 @@ import {
   TOAST_ADD, TOAST_REMOVE,
 } from './actionTypes.js'
 
-export function startCommand (command) {
+export function startCommand (command: string): {
+  type: string,
+  name: string,
+} {
   return {
     type: COMMAND_START,
     name: command,
   }
 }
 
-export function resolveCommand (command) {
+export function resolveCommand (command: string): {
+  type: string,
+  name: string,
+} {
   return {
     type: COMMAND_RESOLVE,
     name: command,
   }
 }
 
-export function errorCommand (command, error) {
+export function errorCommand (command: string, error: string): {
+  type: string,
+  name: string,
+  error: string,
+} {
   return {
     type: COMMAND_ERROR,
     name: command,
@@ -32,8 +43,8 @@ export function errorCommand (command, error) {
   }
 }
 
-function runCommand(command) {
-  return (dispatch, getState) => {
+function runCommand(command): Function {
+  return (dispatch, getState): Promise<any> => {
     dispatch(startCommand(command))
     return doFetch(`/api/home/${command}`, {method: 'POST'})
       .then(response => {
@@ -48,7 +59,7 @@ function runCommand(command) {
 }
 
 export function unlock() {
-  return (dispatch, getState) => {
+  return (dispatch: Function, getState: Function) => {
     if (getState().command.inFlight) {
       return Promise.resolve()
     } else {
@@ -57,13 +68,13 @@ export function unlock() {
   }
 }
 
-export function signinStart () {
+export function signinStart() {
   return {
     type: SIGNIN_START,
   }
 }
 
-export function signinResolve (user, permissions) {
+export function signinResolve (user: string, permissions: string[]) {
   return {
     type: SIGNIN_RESOLVE,
     user: user,
@@ -71,42 +82,42 @@ export function signinResolve (user, permissions) {
   }
 }
 
-export function signinError (error) {
+export function signinError (error: string) {
   return {
     type: SIGNIN_ERROR,
     error: error,
   }
 }
 
-export function setGoogleAuth(auth) {
+export function setGoogleAuth(auth: Object) {
   return {
     type: GOOGLE_AUTH_SET,
     auth: auth,
   }
 }
 
-export function signinWithGoogleUser(user) {
-  return (dispatch, getState) => {
+export function signinWithGoogleUser(user: {getAuthResponse: Function}) {
+  return (dispatch: Function, getState: Function) => {
     dispatch(signinStart())
-    let token = user.getAuthResponse().id_token
+    let token: string = user.getAuthResponse().id_token
     return doFetch('/api/login', {method: 'POST'}, {access_token: token})
       .then(response => response.json())
       .then(({user, permissions}) => dispatch(signinResolve(user, permissions)))
-      .catch(err => {
+      .catch((err: string) => {
         dispatch(addToast(err))
         dispatch(signinError(err))
       })
   }
 }
 
-export function setUser(user) {
+export function setUser(user: ?string) {
   return {
     type: USER_SET,
     user: user,
   }
 }
 
-export function setPermissions(permissions) {
+export function setPermissions(permissions: string[]) {
   return {
     type: PERMISSIONS_SET,
     permissions: permissions,
@@ -127,7 +138,7 @@ export function signoutResolve () {
   }
 }
 
-export function signoutError (error) {
+export function signoutError (error: string) {
   return {
     type: SIGNOUT_ERROR,
     error: error,
@@ -135,7 +146,7 @@ export function signoutError (error) {
 }
 
 export function signout() {
-  return (dispatch, getState) => {
+  return (dispatch: Function, getState: Function) => {
     const state = getState()
     if (state.auth.inFlight) {
       return Promise.resolve()
@@ -153,8 +164,8 @@ export function signout() {
   }
 }
 
-export function addToast(message, duration=3000) {
-  return (dispatch, getState) => {
+export function addToast(message: string, duration: number = 3000) {
+  return (dispatch: Function, getState: Function) => {
     let state = getState()
     if (state.toasts.length == 0) {
       setTimeout(() => dispatch(removeToast()), duration)
@@ -172,8 +183,8 @@ export function addToast(message, duration=3000) {
   }
 }
 
-export function removeToast (toast) {
-  return (dispatch, getState) => {
+export function removeToast () {
+  return (dispatch: Function, getState: Function) => {
     let state = getState()
     if (state.toasts.length > 1) {
       setTimeout(() => dispatch(removeToast()), state.toasts[1].duration)

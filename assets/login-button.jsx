@@ -1,7 +1,10 @@
+// @flow
 import React, {PropTypes} from 'react'
 import {findDOMNode} from 'react-dom'
 
 class LoginButton extends React.Component {
+  static defaultProps: {}
+
   componentDidMount() {
     this._renderGoogleButton()
   }
@@ -13,7 +16,7 @@ class LoginButton extends React.Component {
   _renderGoogleButton() {
     let options = {...this.props}
     delete options.id
-    gapi.signin2.render(this.props.id, options)
+    window.gapi.signin2.render(this.props.id, options)
   }
 
   render() {

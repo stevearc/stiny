@@ -1,9 +1,11 @@
-export function getCookieValue(a) {
+// @flow
+
+export function getCookieValue(a: string): string {
     let b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)')
     return b ? b.pop() : ''
 }
 
-export function doFetch(url, options = {}, data) {
+export function doFetch(url: string, options: Object = {}, data: ?Object): Promise<Object> {
   if (!options.headers) {
     options.headers = new Headers()
   }
@@ -32,7 +34,7 @@ export function doFetch(url, options = {}, data) {
   })
 }
 
-export function hasPermission(state, permission) {
+export function hasPermission(state: Object, permission: string): boolean {
   if (state.auth.permissions.includes('admin')) {
     return true
   } else {
@@ -40,7 +42,7 @@ export function hasPermission(state, permission) {
   }
 }
 
-export function getMetaContent(name) {
-  let el = document.head.querySelector(`meta[name='${name}']`)
-  return el ? el.content : null
+export function getMetaContent(name: string): ?string {
+  let el: HTMLElement = document.head.querySelector(`meta[name='${name}']`)
+  return el ? el.getAttribute('content') : null
 }

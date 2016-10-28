@@ -1,3 +1,4 @@
+// @flow
 import {
   COMMAND_START, COMMAND_RESOLVE, COMMAND_ERROR,
   SIGNOUT_START, SIGNOUT_RESOLVE, SIGNOUT_ERROR,
@@ -8,12 +9,17 @@ import {
   TOAST_ADD, TOAST_REMOVE,
 } from './actionTypes.js'
 
-export function auth(state = {
+export function auth(state: {
+  user: ?string,
+  googleAuth: ?Object,
+  inFlight: boolean,
+  permissions: string[],
+} = {
   user: null,
   googleAuth: null,
   inFlight: false,
   permissions: [],
-}, action) {
+}, action: Object) {
   switch (action.type) {
     case GOOGLE_AUTH_SET:
       return {...state,
@@ -61,10 +67,13 @@ export function auth(state = {
   }
 }
 
-export function command(state = {
+export function command(state: {
+  inFlight: boolean,
+  name: ?string,
+} = {
   inFlight: false,
   name: null,
-}, action) {
+}, action: Object) {
   switch (action.type) {
     case COMMAND_START:
       return {...state,
@@ -81,7 +90,10 @@ export function command(state = {
   }
 }
 
-export function toasts(state = [], action) {
+export function toasts(state: {
+  message: string,
+  duration: number,
+}[] = [], action: Object) {
   switch (action.type) {
     case TOAST_ADD:
       return [...state, action.toast]

@@ -1,7 +1,12 @@
+// @flow
 import React, {PropTypes} from 'react'
 import "./remote-button.styl";
 
-const RemoteButton = (props) => {
+const RemoteButton = (props: {
+  onClick: Function,
+  disabled: ?boolean,
+  image: string,
+}) => {
   return <button className="remote-button" onClick={props.onClick} disabled={props.disabled}>
     <span className={`icon icon-${props.image}`}></span>
   </button>

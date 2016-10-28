@@ -1,3 +1,4 @@
+// @flow
 import React from 'react'
 import {render} from 'react-dom'
 import {Provider} from 'react-redux'
@@ -16,9 +17,9 @@ function startApp(auth) {
   )
   store.dispatch(setGoogleAuth(auth))
 
-  let user = getMetaContent('stiny-user')
+  let user: ?string = getMetaContent('stiny-user')
   store.dispatch(setUser(user))
-  let perms = getMetaContent('stiny-permissions')
+  let perms: ?string = getMetaContent('stiny-permissions')
   if (perms) {
     store.dispatch(setPermissions(perms.split(',')))
   }
@@ -32,7 +33,7 @@ function startApp(auth) {
 }
 
 if (window.gapi) {
-    gapi.load('auth2', () => gapi.auth2.init().then(startApp))
+  window.gapi.load('auth2', () => window.gapi.auth2.init().then(startApp))
 } else {
-  window.onLoad = () => gapi.load('auth2', () => gapi.auth2.init().then(startApp))
+  window.onLoad = () => window.gapi.load('auth2', () => window.gapi.auth2.init().then(startApp))
 }

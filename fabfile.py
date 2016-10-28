@@ -81,6 +81,7 @@ def write_credentials(filename):
 def build_web():
     fab.local('npm install')
     fab.local('rm -rf stiny/webpack')
+    fab.local('npm run flow')
     fab.local('npm run build-prod')
     version = _version()
     fab.local("sed -i -e 's/version=.*/version=\"%s\",/' setup.py" % version)

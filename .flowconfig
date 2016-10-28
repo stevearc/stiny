@@ -1,0 +1,21 @@
+[ignore]
+node_modules/*
+venv/*
+
+[include]
+
+[libs]
+
+[options]
+module.name_mapper.extension='styl' -> '<PROJECT_ROOT>/CSSStub.js'
+module.name_mapper.extension='css' -> '<PROJECT_ROOT>/CSSStub.js'
+module.name_mapper.extension='jpg' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='png' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='gif' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='eot' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='svg' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='ttf' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='woff' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='woff2' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='mp4' -> '<PROJECT_ROOT>/FileStub.js'
+module.name_mapper.extension='webm' -> '<PROJECT_ROOT>/FileStub.js'

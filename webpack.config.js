@@ -14,7 +14,7 @@ module.exports = {
 
   plugins: [
     new BundleTracker({filename: './stiny/webpack/stats.json'}),
-    new ExtractTextPlugin('[name]-[hash].css')
+    new ExtractTextPlugin('[name]-[hash].css'),
   ],
 
   module: {
@@ -25,7 +25,7 @@ module.exports = {
         loader: 'babel-loader',
         query: {
           presets: ['es2015', 'react'],
-          plugins: ["transform-object-rest-spread"]
+          plugins: ["transform-object-rest-spread", "transform-flow-strip-types"]
         }
       },
       {

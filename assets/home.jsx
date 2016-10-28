@@ -1,3 +1,4 @@
+// @flow
 import React from 'react'
 import RemoteButton from './remote-button.jsx'
 import LoginButton from './login-button.jsx'

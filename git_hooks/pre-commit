@@ -2,3 +2,4 @@
 git diff-index --check --cached HEAD --
 pylint --rcfile=.pylintrc stiny stiny_worker/stiny_worker
 pep8 --config=.pep8.ini stiny stiny_worker/stiny_worker
+npm run flow

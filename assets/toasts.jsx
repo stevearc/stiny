@@ -1,3 +1,4 @@
+// @flow
 import React from 'react'
 import {connect} from 'react-redux'
 import {unlock} from './actions.js'
@@ -11,14 +12,14 @@ const mapStateToProps = (state, ownProps) => {
 }
 
 const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-  }
+  return {}
 }
 
-const Toasts = (props) => {
-  let content = props.toast ? <div className="toast">{props.toast}</div> : null
+const Toasts = (props: {
+  toast: ?string
+}) => {
   return <div className="toasts">
-    {content}
+    {props.toast ? <div className="toast">{props.toast}</div> : null}
   </div>
 }
 
