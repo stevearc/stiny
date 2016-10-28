@@ -17,7 +17,7 @@ from pyramid.settings import asbool, aslist
 from pyramid_beaker import session_factory_from_settings
 from twilio.util import RequestValidator
 
-from .gutil import Calendar
+from .gutil import Calendar, normalize_email
 
 
 LOG = logging.getLogger(__name__)
@@ -85,14 +85,15 @@ def _raise_error(request, error, message='Unknown error', status_code=500):
 
 def _auth_callback(userid, request):
     """ Get permissions for a user with an email. """
+    n_userid = normalize_email(userid)
     perms = []
     # If permissions are declared in the config.ini file, just use those.
-    setting = request.registry.settings.get('auth.' + userid)
+    setting = request.registry.settings.get('auth.' + n_userid)
     if setting is not None:
         principals = aslist(setting)
     else:
         principals = []
-        if request.cal.is_guest(userid):
+        if request.cal.is_guest(n_userid):
             principals.append('unlock')
 
     perms.extend(principals)
@@ -144,12 +145,14 @@ def includeme(config):
 
     # Set admins from environment variable for local development
     if 'STINY_ADMINS' in os.environ:
-        for admin in aslist(os.environ['STINY_ADMINS']):
-            settings['auth.' + admin] = 'admin'
+        for email in aslist(os.environ['STINY_ADMINS']):
+            email = normalize_email(email)
+            settings['auth.' + email] = 'admin'
 
     # Set guests from environment variable for local development
     if 'STINY_GUESTS' in os.environ:
         for email in aslist(os.environ['STINY_GUESTS']):
+            email = normalize_email(email)
             settings['auth.' + email] = 'unlock'
 
     # Special request methods

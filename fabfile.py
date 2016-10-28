@@ -6,6 +6,7 @@ import json
 from fabric.context_managers import path
 from fabric.decorators import roles
 from pyramid.settings import aslist
+from stiny.gutil import normalize_email
 
 
 fab.env.roledefs = {
@@ -30,8 +31,8 @@ def _get_var(key):
 
 CONSTANTS = {
     'venv': '/envs/stiny',
-    'admins': aslist(_get_var('STINY_ADMINS')),
-    'guests': aslist(_get_var('STINY_GUESTS')),
+    'admins': [normalize_email(e) for e in aslist(_get_var('STINY_ADMINS'))],
+    'guests': [normalize_email(e) for e in aslist(_get_var('STINY_GUESTS'))],
     'phone_access': _get_var('STINY_PHONE_ACCESS'),
     'url_prefix': 'gen/' + _get_ref(),
     'session': {
