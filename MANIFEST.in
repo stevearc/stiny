@@ -1,6 +1,3 @@
 include CHANGES.rst
 include README.rst
-include stiny/files.json
-include stiny/credentials.dat
-recursive-include stiny *.jinja2 *.js *.css *.eot *.svg *.ttf *.woff *.woff2 *.otf *.html *.png
-prune stiny/static
+recursive-include stiny *.jinja2 *.js *.css *.eot *.svg *.ttf *.woff *.woff2 *.otf *.png *.ico *.json *.dat

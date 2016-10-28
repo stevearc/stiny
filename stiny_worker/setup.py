@@ -9,20 +9,14 @@ README = open(os.path.join(HERE, 'README.rst')).read()
 CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
 
 REQUIREMENTS = [
+    'rpi.gpio',
+    'bottle',
     'google-api-python-client',
-    'pycrypto',
-    'pyramid>=1.7',
-    'pyramid_beaker',
-    'pyramid_duh>=0.1.2',
-    'pyramid_jinja2',
-    'pyramid_webpack',
-    'requests',
-    'twilio',
 ]
 
 if __name__ == "__main__":
     setup(
-        name='stiny',
+        name='stiny_worker',
         version="develop",
         description='Home automation assistant',
         long_description=README + '\n\n' + CHANGES,
@@ -30,7 +24,6 @@ if __name__ == "__main__":
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 2.7',
-            'Framework :: Pyramid',
             'Private :: Do Not Upload',
         ],
         author='Steven Arcangeli',
@@ -39,17 +32,10 @@ if __name__ == "__main__":
         platforms='any',
         include_package_data=True,
         zip_safe=True,
-        packages=find_packages(exclude=('worker',)),
+        packages=find_packages(),
         entry_points={
-            'paste.app_factory': [
-                'main = stiny:main',
-            ],
-            'paste.filter_app_factory': [
-                'security_headers = stiny.security:SecurityHeaders',
-            ],
             'console_scripts': [
-                'stiny-calendar = stiny.scripts:do_calendar',
-                'stiny-setup = stiny.scripts:save_credentials',
+                'stiny-worker = stiny_worker:main',
             ],
         },
         install_requires=REQUIREMENTS,

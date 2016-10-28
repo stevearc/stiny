@@ -1,4 +1,4 @@
-pylint==1.1.0
+pylint==1.6.4
 pep8
 autopep8
 tox
@@ -6,3 +6,4 @@ waitress
 nose
 coverage
 fabric
+pex

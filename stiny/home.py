@@ -24,11 +24,12 @@ def ring_doorbell(request):
 @view_config(route_name='on_sms', request_method='GET', renderer='string',
              permission=NO_PERMISSION_REQUIRED)
 def received_sms(request):
+    """ Open the door if the SMS is from an approved number """
     if not request.validate_twilio():
         return request.error('auth', "Failed HMAC")
     from_number = request.param('From')
-    if not request.cal.is_guest(from_number) and \
-            from_number not in request.registry.phone_access:
+    if from_number not in request.registry.phone_access and \
+            not request.cal.is_guest(from_number):
         LOG.warning("%r attempted unauthorized entry", from_number)
         return ("I'm sorry, you are not authorized to enter this dwelling. "
                 "Please contact the residents.")

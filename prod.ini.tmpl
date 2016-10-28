@@ -17,7 +17,11 @@ session.secure = true
 
 authtkt.secret = {{ authtkt.secret }}
 
-pike.url_prefix = {{ url_prefix }}
+webpack.debug = false
+webpack.cache_max_age = future
+webpack.bundle_dir = stiny:webpack/bundles
+webpack.stats_file = stiny:webpack/stats.json
+webpack.static_view_name = webpack
 
 worker.door = http://localhost:9000
 
@@ -28,8 +32,11 @@ google.calendar_id = {{ google.calendar_id }}
 
 twilio.auth_token = {{ twilio.auth_token }}
 
-{% for admin in admins -%}
-auth.{{ admin }} = admin
+{% for email in admins -%}
+auth.{{ email }} = admin
+{% endfor %}
+{% for email in guests -%}
+auth.{{ email }} = unlock
 {% endfor %}
 
 phone_access = {{ phone_access }}
@@ -49,7 +56,7 @@ paste = config:%p
 paste-logger = %p
 socket = 127.0.0.1:3034
 master = true
-processes = 5
+processes = 3
 reload-mercy = 15
 worker-reload-mercy = 15
 max-requests = 1000

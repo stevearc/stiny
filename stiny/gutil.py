@@ -83,6 +83,7 @@ class Calendar(object):
 
     def _refresh_credentials_if_needed(self):
         """ If credentials will expire soon, force a refresh """
+        print self.is_credentials_valid
         if not self.is_credentials_valid:
             raise AccessTokenCredentialsError("Invalid google credentials")
         if self.credentials.token_expiry - datetime.utcnow() < REFRESH_MINS:

@@ -1,101 +1,31 @@
 import os
 import select
 import sys
-from distutils.spawn import find_executable  # pylint: disable=E0611,F0401
 
 import argparse
-import logging
+import json
 import logging.config
-import shutil
-import subprocess
-import tempfile
+import pkg_resources
 import threading
 import tty
 
 
 LOG = None
-
-
-try:
-    from urllib import urlretrieve
-except ImportError:
-    from urllib.request import urlretrieve  # pylint: disable=E0611,F0401
-
-VENV_VERSION = '13.0.3'
-VENV_URL = ("https://pypi.python.org/packages/source/v/"
-            "virtualenv/virtualenv-%s.tar.gz" % VENV_VERSION)
-VENV_NAME = 'myvirtualenv'
-DEPENDENCIES = {
-    'RPi.GPIO': 'rpi.gpio',
-    'bottle': 'bottle',
-    'oauth2client': 'google-api-python-client',
-}
-
-
-def bootstrap_virtualenv(env):
-    """
-    Activate a virtualenv, creating it if necessary.
-
-    Parameters
-    ----------
-    env : str
-        Path to the virtualenv
-
-    """
-    if not os.path.exists(env):
-        # If virtualenv command exists, use that
-        if find_executable('virtualenv') is not None:
-            cmd = ['virtualenv'] + [env]
-            subprocess.check_call(cmd)
-        else:
-            # Otherwise, download virtualenv from pypi
-            path = urlretrieve(VENV_URL)[0]
-            subprocess.check_call(['tar', 'xzf', path])
-            subprocess.check_call(
-                [sys.executable,
-                 "virtualenv-%s/virtualenv.py" % VENV_VERSION,
-                 env])
-            os.unlink(path)
-            shutil.rmtree("virtualenv-%s" % VENV_VERSION)
-        print("Created virtualenv %s" % env)
-
-    executable = os.path.join(env, 'bin', 'python')
-    os.execv(executable, [executable] + sys.argv)
-
-
-def is_inside_virtualenv(env):
-    return any((p.startswith(env) for p in sys.path))
-
-
-def install_lib(venv, name, pip_name=None):
-    try:
-        __import__(name)
-    except ImportError:
-        if pip_name is None:
-            pip_name = name
-        pip = os.path.join(venv, 'bin', 'pip')
-        subprocess.check_call([pip, 'install', pip_name])
-    except RuntimeError as e:
-        LOG.warn("Error when importing library: %s", e)
-
-
-def get_constant(constant):
-    if constant in os.environ:
-        return os.environ[constant]
-    else:
-        import credentials
-        return getattr(credentials, constant)
-
-
 LOG_LEVELS = ['debug', 'info', 'warn', 'error']
+
+
+def get_config():
+    constants = dict(os.environ)
+    if pkg_resources.resource_exists(__name__, 'config.json'):
+        raw = pkg_resources.resource_string(__name__, 'config.json')
+        constants.update(json.loads(raw))
+    return constants
+
 
 def main():
     """ Run a worker that manages a Raspberry Pi """
     global LOG
     parser = argparse.ArgumentParser(description=main.__doc__)
-    default_env = os.path.join(tempfile.gettempdir(), VENV_NAME)
-    parser.add_argument('-e', default=default_env,
-                        help="Path to virtualenv (default %(default)s)")
     parser.add_argument('-H', '--host', default='localhost',
                         help="Webserver host (default %(default)s)")
     parser.add_argument('-p', '--port', type=int, default=8080,
@@ -141,27 +71,20 @@ def main():
             'backupCount': 3,
         }
     logging.config.dictConfig(log_config)
-
     LOG = logging.getLogger(__name__)
 
-    # Install or restart into virtualenv if necessary
-    if not is_inside_virtualenv(args.e):
-        bootstrap_virtualenv(args.e)
-        return
-    for name, pip_name in DEPENDENCIES.items():
-        install_lib(args.e, name, pip_name)
+    # Import these after we've finished setting up logging
+    from .gutil import Calendar
+    from .web import run_webserver
+    from .worker import DoorWorker
 
-    # Connect to Dynamodb
-    from gutil import Calendar
-
-    client_id = get_constant('STINY_SERVER_GOOGLE_CLIENT_ID')
-    client_secret = get_constant('STINY_SERVER_GOOGLE_CLIENT_SECRET')
-    client_secret = get_constant('STINY_SERVER_GOOGLE_CLIENT_SECRET')
-    calendar_id = get_constant('STINY_CAL_ID')
+    config = get_config()
+    client_id = config['STINY_SERVER_GOOGLE_CLIENT_ID']
+    client_secret = config['STINY_SERVER_GOOGLE_CLIENT_SECRET']
+    calendar_id = config['STINY_CAL_ID']
     calendar = Calendar(client_id, client_secret, calendar_id=calendar_id)
 
     # Start the worker
-    from worker import DoorWorker
     worker = DoorWorker(calendar=calendar, isolate=args.debug)
     worker.daemon = True
     worker.start()
@@ -174,19 +97,6 @@ def main():
         poll_user_input(worker)
     else:
         run_webserver(worker, args.host, args.port)
-
-
-def run_webserver(worker, host, port):
-    # Set up the bottle endpoint
-    from bottle import route, request, run
-
-    @route('/do/<command>', method='POST')
-    def do_command(command):
-        kwargs = dict(request.json)
-        worker.do(command, **kwargs)
-        return {}
-
-    run(host=host, port=port)
 
 
 def poll_user_input(worker):

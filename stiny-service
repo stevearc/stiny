@@ -11,7 +11,7 @@ set -e
 
 . /lib/lsb/init-functions
 
-ARGS="/home/pi/worker.zip -e /home/pi/stiny_env -l debug -f /home/pi/stiny_log.log"
+ARGS="/home/pi/stiny -l debug -f /home/pi/stiny_log.log"
 
 case "$1" in
   start)

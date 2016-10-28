@@ -1,3 +1,4 @@
 #!/bin/bash -e
 git diff-index --check --cached HEAD --
-stiny_env/bin/python git_hooks/hook.py all
+pylint --rcfile=.pylintrc stiny stiny_worker/stiny_worker
+pep8 --config=.pep8.ini stiny stiny_worker/stiny_worker

@@ -1,40 +1,35 @@
 <!DOCTYPE html>
-<html id="ng-app" ng-app="stiny">
+<html>
 <head>
   <title>Stiny</title>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="shortcut icon" href="{{ prefix }}/img/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="128x128" href="{{ prefix }}/img/strongbadhead_128x128.png" />
-  <link rel="apple-touch-icon" sizes="144x144" href="{{ prefix }}/img/strongbadhead_144x144.png" />
-  <link rel="apple-touch-icon" sizes="192x192" href="{{ prefix }}/img/strongbadhead_192x192.png" />
-  <link rel="icon" sizes="128x128" href="{{ prefix }}/img/strongbadhead_128x128.png" />
-  <link rel="icon" sizes="144x144" href="{{ prefix }}/img/strongbadhead_144x144.png" />
-  <link rel="icon" sizes="192x192" href="{{ prefix }}/img/strongbadhead_192x192.png" />
-  {% for url in request.assets('lib.css') -%}
-    <link rel="stylesheet" type="text/css" href="{{ url }}">
-  {% endfor -%}
-  {% for url in request.assets('app.less') -%}
-    <link rel="stylesheet" type="text/css" href="{{ url }}">
-  {% endfor %}
+  <meta name="google-signin-client_id" content="{{ request.google_client_id }}">
+  {% if request.authenticated_userid -%}
+    <meta name="stiny-user" content="{{ request.authenticated_userid }}">
+    <meta name="stiny-permissions" content="{{ request.effective_principals | join(',')}}">
+  {% endif %}
+  <link rel="shortcut icon" href="{{ 'stiny:static/img/favicon.ico' | static_url }}" />
+  <link rel="apple-touch-icon" sizes="128x128" href="{{ 'stiny:static/img/strongbadhead_128x128.png' | static_url }}" />
+  <link rel="apple-touch-icon" sizes="144x144" href="{{ 'stiny:static/img/strongbadhead_144x144.png' | static_url }}" />
+  <link rel="apple-touch-icon" sizes="192x192" href="{{ 'stiny:static/img/strongbadhead_192x192.png' | static_url }}" />
+  <link rel="icon" sizes="128x128" href="{{ 'stiny:static/img/strongbadhead_128x128.png' | static_url }}" />
+  <link rel="icon" sizes="144x144" href="{{ 'stiny:static/img/strongbadhead_144x144.png' | static_url }}" />
+  <link rel="icon" sizes="192x192" href="{{ 'stiny:static/img/strongbadhead_192x192.png' | static_url }}" />
+  {% webpack 'main', '.css' -%}
+    <link rel="stylesheet" type="text/css" href="{{ ASSET.url }}">
+  {% endwebpack %}
 </head>
-<body constants="{{ request.client_constants() | json }}">
+<body>
 
-<div class="container">
-  <div st-toaster></div>
-  <div st-navbar></div>
-  <div ng-view></div>
-</div>
+<div id="react-app"></div>
 
-<!-- Google libs for sign-in -->
-<script src="https://apis.google.com/js/client:plusone.js" type="text/javascript" charset="utf-8"></script>
-{% for url in request.assets('lib.js') -%}
-  <script type="text/javascript" src="{{ url }}"></script>
-{% endfor -%}
-{% for url in request.assets('app.js') -%}
-  <script type="text/javascript" src="{{ url }}"></script>
-{% endfor %}
+{# Google libs for sign-in #}
+<script type="text/javascript" src="https://apis.google.com/js/platform.js?onload=onLoad" async defer></script>
+{% webpack 'main', '.js' -%}
+  <script type="text/javascript" src="{{ ASSET.url }}" async defer></script>
+{% endwebpack %}
 </body>
 </html>

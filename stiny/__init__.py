@@ -11,10 +11,8 @@ from collections import defaultdict
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
-from pyramid.events import NewRequest, subscriber
 from pyramid.httpexceptions import exception_response
 from pyramid.renderers import JSON, render, render_to_response
-from pyramid.session import check_csrf_token
 from pyramid.settings import asbool, aslist
 from pyramid_beaker import session_factory_from_settings
 from twilio.util import RequestValidator
@@ -35,18 +33,12 @@ json_renderer.add_adapter(datetime.datetime, lambda obj, r:
 json_renderer.add_adapter(datetime.date,
                           lambda obj, _: obj.isoformat())
 json_renderer.add_adapter(defaultdict,
-                          lambda obj, _: dict(object))
+                          lambda obj, _: dict(obj))
+json_renderer.add_adapter(Exception,
+                          lambda e, _: str(e))
 
 
-@subscriber(NewRequest)
-def check_csrf(event):
-    """ Check the CSRF token on all non-GET requests. """
-    request = event.request
-    if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
-        check_csrf_token(event.request)
-
-
-def _error(request, error, message='Unknown error', status_code=400):
+def _error(request, error, message='Unknown error', status_code=500):
     """
     Construct an error response
 
@@ -66,10 +58,10 @@ def _error(request, error, message='Unknown error', status_code=400):
     }
     LOG.error("%s: %s", error, message)
     request.response.status_code = status_code
-    return render_to_response('json', data, request)
+    return render_to_response('json', data, request, response=request.response)
 
 
-def _raise_error(request, error, message='Unknown error', status_code=400):
+def _raise_error(request, error, message='Unknown error', status_code=500):
     """
     Raise an error response.
 
@@ -89,40 +81,6 @@ def _raise_error(request, error, message='Unknown error', status_code=400):
     err = exception_response(status_code, detail=message)
     err.error = error
     raise err
-
-
-def _assets(request, key):
-    """
-    Get a list of built assets.
-
-    Asset list pulled from files.json, which is written by build.go
-
-    Parameters
-    ----------
-    key : str
-        String identifier for a list of assets
-
-    """
-    filename = os.path.join(os.path.dirname(__file__), 'files.json')
-    settings = request.registry.settings
-    debug = asbool(settings.get('pike.debug', False))
-    if debug or request.registry.assets is None:
-        with open(filename, 'r') as ifile:
-            request.registry.assets = json.load(ifile)
-    prefix = request.registry.settings.get('pike.url_prefix', 'gen').strip('/')
-    for filename in request.registry.assets.get(key, []):
-        yield posixpath.join(prefix, filename)
-
-
-def _constants(request):
-    """ Create a dictionary of declared client constants. """
-    data = {}
-    for k, v in request.registry.client_constants.iteritems():
-        if callable(v):
-            v = v(request)
-        if v is not None:
-            data[k] = v
-    return data
 
 
 def _auth_callback(userid, request):
@@ -164,6 +122,7 @@ def includeme(config):
     settings = config.get_settings()
     config.include('pyramid_beaker')
     config.include('pyramid_duh')
+    config.include('pyramid_webpack')
     config.include('stiny.route')
     config.add_renderer('json', json_renderer)
 
@@ -173,6 +132,7 @@ def includeme(config):
         'json': to_json,
     }
     settings['jinja2.directories'] = ['stiny:templates']
+    settings['jinja2.extensions'] = ['pyramid_webpack.jinja2ext:WebpackExtension']
     config.include('pyramid_jinja2')
     config.commit()
 
@@ -180,38 +140,32 @@ def includeme(config):
     settings.setdefault('session.type', 'cookie')
     settings.setdefault('session.httponly', 'true')
     config.set_session_factory(session_factory_from_settings(settings))
+    config.set_default_csrf_options(require_csrf=True, token=None)
 
     # Set admins from environment variable for local development
     if 'STINY_ADMINS' in os.environ:
         for admin in aslist(os.environ['STINY_ADMINS']):
             settings['auth.' + admin] = 'admin'
 
+    # Set guests from environment variable for local development
+    if 'STINY_GUESTS' in os.environ:
+        for email in aslist(os.environ['STINY_GUESTS']):
+            settings['auth.' + email] = 'unlock'
+
     # Special request methods
     config.add_request_method(_error, name='error')
     config.add_request_method(_raise_error, name='raise_error')
-    config.add_request_method(_constants, name='client_constants')
     config.add_request_method(lambda r, *a, **k: r.route_url('root', *a, **k),
                               name='rooturl')
     config.add_request_method(lambda r, u: _auth_callback(u, r),
                               name='user_principals')
+    config.add_request_method(lambda r: r.registry.settings.get('google.client_id'),
+                              name='google_client_id', reify=True)
 
     config.registry.phone_access = aslist(settings.get('phone_access', []))
 
-    prefix = settings.get('pike.url_prefix', 'gen').strip('/')
-    config.registry.client_constants = {
-        'URL_PREFIX': '/' + prefix,
-        'USER': lambda r: r.authenticated_userid,
-        'GOOGLE_CLIENT_ID': settings.get('google.client_id'),
-        'PERMISSIONS': lambda r: r.effective_principals,
-    }
-
-    config.registry.assets = None
-    config.add_request_method(_assets, name='assets')
-    debug = asbool(settings.get('pike.debug', False))
-    cache_age = 0 if debug else 31556926
-    config.add_static_view(name=prefix,
-                           path='stiny:gen',
-                           cache_max_age=cache_age)
+    config.add_static_view(name='static', path='stiny:static',
+                           cache_max_age=10 * 365 * 24 * 60 * 60)
 
     # Auth
     config.set_authorization_policy(ACLAuthorizationPolicy())
@@ -229,11 +183,13 @@ def includeme(config):
     config.set_default_permission('default')
 
     # Calendar
-    settings.setdefault('google.client_id',
-                        os.environ.get('STINY_GOOGLE_CLIENT_ID'))
+    config.registry.GOOGLE_WEB_CLIENT_ID = settings.setdefault(
+        'google.client_id',
+        os.environ.get('STINY_DEV_CLIENT_GOOGLE_CLIENT_ID'))
     server_client_id = settings.get('google.server_client_id')
     if server_client_id is None:
         server_client_id = os.environ['STINY_SERVER_GOOGLE_CLIENT_ID']
+    config.registry.GOOGLE_CLIENT_ID = server_client_id
     client_secret = settings.get('google.server_client_secret')
     if client_secret is None:
         client_secret = os.environ['STINY_SERVER_GOOGLE_CLIENT_SECRET']

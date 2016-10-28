@@ -1,5 +1,5 @@
 *.py[cod]
-stiny_env
+venv
 *.swp
 dist
 lib
@@ -13,7 +13,10 @@ _build
 __pycache__
 .ropeproject
 prod.ini
-gen
-files.json
+webpack/
+node_modules/
 credentials.py
 credentials.dat
+config.json
+pex_cache
+pex_wheels

@@ -1,1 +1,0 @@
-../stiny/gutil.py

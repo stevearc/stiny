@@ -28,48 +28,53 @@ Structure
 The core webserver is a WSGI app running the pyramid framework. Those are the
 ``stiny/*.py`` files. The webserver is designed to run on a machine separate
 from the raspberry pi relay controller. The pi runs worker code (in
-``worker/``) that creates a simple http interface for controls. We then use ssh
-to forward a port to the webserver so the webserver can send commands to the
-pi.
-
-More on the webserver: the only webpage rendered by the python app is inside
-``stiny/templates/index.jinja2``; all page changes thereafter are loaded in via
-angular. Javascript/css libraries are in ``stiny/static/lib``, and the
-client-side application code is in ``stiny/static/app``.
+``stiny_worker/``) that creates a simple http interface for controls. We then
+use ssh to forward a port to the webserver so the webserver can send commands to
+the pi.
 
 Local Development
 -----------------
-First you need to `install Go <https://golang.org/doc/install>`_. We're using an asset
-pipeline that I wrote in Go to compile coffeescript and less, and to bundle
-everything.
-
-Then you need to download all the javascript/css libraries that we're using.
-There's a handy script that will do just that:
-
-``./dl-deps.sh``
 
 Now create a virtualenv and install stiny:
 
 .. code-block:: bash
 
-    $ virtualenv stiny_env
-    $ . stiny_env/bin/activate
+    $ virtualenv venv
+    $ . venv/bin/activate
     $ pip install -r requirements_dev.txt
     $ pip install -e .
+    $ pip install -e stiny_worker
+
+Also set up the node package
+
+.. code-block:: bash
+
+    $ npm install
 
 You will need certain secret tokens for accessing certain APIs (GCal, Twilio,
-etc). They will be read out of environment variables. I put them inside the
-google doc on door wiring. You should put them into your bashrc or similar.
+etc). They will be read out of environment variables. You should put them into
+your bashrc or some other file you can conveniently source before doing
+development::
+
+  STINY_ENCRYPT_KEY - Secret key used to encrypt the beaker session
+  STINY_VALIDATE_KEY - Secret key used to validate the beaker session
+  STINY_AUTH_SECRET - Secret key used to sign the auth token
+  STINY_PROD_CLIENT_GOOGLE_CLIENT_ID - Oauth 2.0 'web application' client ID configured for your production site
+  STINY_DEV_CLIENT_GOOGLE_CLIENT_ID - Oauth 2.0 'web application' client ID configured for localhost development
+  STINY_SERVER_GOOGLE_CLIENT_ID - Oauth 2.0 'other' client ID used to get calendar access permissions
+  STINY_SERVER_GOOGLE_CLIENT_SECRET - Corresponding secret for the STINY_SERVER_GOOGLE_CLIENT_ID
+  STINY_TWILIO_AUTH_TOKEN - Auth token for twilio
+  STINY_ADMINS - Space-delimited list of emails for admin users
+  STINY_GUESTS - Space-delimited list of emails for users with unlock permissions
+  STINY_PHONE_ACCESS - Space-delimited list of phone numbers for users with unlock permissions
+  STINY_CAL_ID - Id of the calendar to check for events and guests
 
 Activate the virtualenv and run ``stiny-setup``. This will create the
 ``credentials.dat`` file which will allow stiny to access the Google Calendar.
 
 Everything should be working! You can run the server with ``pserve --reload
-development.ini``, and the asset pipeline with ``go run build.go -w``. For
-convenience I have bundled both of those commands into the script
-``./serve_forever.sh``
-
-To run the worker code, just do ``python worker/ --debug -l debug -i``.
+development.ini``, the asset pipeline with ``npm run watch``, and the worker
+with ``stiny-worker --debug -l debug -i``.
 
 Deploy
 ------

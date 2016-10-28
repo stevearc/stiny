@@ -3,6 +3,7 @@ import requests
 from pyramid.security import forget, remember, NO_PERMISSION_REQUIRED
 from pyramid.view import view_config
 from pyramid_duh import argify
+from oauth2client import client, crypt
 
 
 @view_config(route_name='logout')
@@ -29,24 +30,17 @@ def login(request, access_token):
         List of permissions that the user has.
 
     """
-    resp = requests.get('https://www.googleapis.com/plus/v1/people/me',
-                        params={'access_token': access_token})
-    if not resp.ok:
-        try:
-            message = resp.json()['error']['message']
-        except Exception:
-            message = "Could not retrieve email from Google"
-        return request.error(
-            'google_api',
-            message)
+    try:
+        idinfo = client.verify_id_token(access_token,
+                                        request.registry.GOOGLE_WEB_CLIENT_ID)
+        if idinfo['aud'] not in [request.registry.GOOGLE_WEB_CLIENT_ID]:
+            raise crypt.AppIdentityError("Unrecognized client.")
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise crypt.AppIdentityError("Wrong issuer.")
+    except crypt.AppIdentityError as e:
+        return request.error('token', e.message, 400)
 
-    data = resp.json()
-
-    email = None
-    for addr in data['emails']:
-        if addr['type'] == 'account':
-            email = addr['value']
-
+    email = idinfo.get('email')
     if email is None:
         return request.error('google_data', "Could not find Google email")
 

@@ -17,12 +17,16 @@ LOG = logging.getLogger(__name__)
 def index_view(request):
     """ Root view '/' """
     secure = asbool(request.registry.settings.get('session.secure', False))
-    request.response.set_cookie('CSRF-Token', request.session.get_csrf_token(),
-                                secure=secure)
-    prefix = request.registry.settings.get('pike.url_prefix', 'gen').strip('/')
-    return {
-        'prefix': '/' + prefix,
-    }
+    try:
+        token = request.session.new_csrf_token()
+    except Exception:
+        # New versions of beaker don't play nice with old. If there's an error,
+        # we need to create a new session.
+        request.session.invalidate()
+        token = request.session.new_csrf_token()
+
+    request.response.set_cookie('CSRF-Token', token, secure=secure)
+    return {}
 
 
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
