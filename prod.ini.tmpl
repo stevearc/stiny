@@ -46,6 +46,8 @@ use = egg:stiny#security_headers
 frame_options = DENY
 xss_protection = 1; mode=block
 content_type_options = nosniff
+strict_transport_security = max-age=31536000
+content_security_policy = default-src 'self'; child-src accounts.google.com; script-src 'self' apis.google.com; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline' 'self'
 
 ###
 # wsgi server configuration
