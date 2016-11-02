@@ -5,7 +5,6 @@ import argparse
 import httplib2
 import logging
 import pkg_resources
-import six
 from apiclient.discovery import build  # pylint: disable=F0401
 from datetime import datetime, timedelta
 from oauth2client.client import (OAuth2WebServerFlow, Credentials,
@@ -34,8 +33,7 @@ def normalize_email(email):
     email = re.sub(r'\+[^@]*@', '@', email)
     name, domain = email.split('@')
     # Remove all periods
-    name = six.text_type(name).translate({ord(u'.'): None})
-    return name.lower() + '@' + domain.lower()
+    return name.replace('.', '').lower() + '@' + domain.lower()
 
 
 class Storage(BaseStorage):
